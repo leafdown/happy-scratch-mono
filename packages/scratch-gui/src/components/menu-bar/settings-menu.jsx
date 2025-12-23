@@ -21,9 +21,10 @@ class SettingsMenu extends BaseMenu {
     constructor (props) {
         super(props);
 
-        bindAll(this, ['handleKeyPress']);
+        bindAll(this, []);
         
         this.state = {focusedIndex: -1};
+
         this.languageRef = React.createRef();
         this.themeRef = React.createRef();
         // hardcoded logic because of only two options
@@ -31,15 +32,6 @@ class SettingsMenu extends BaseMenu {
     }
 
     static contextType = MenuRefContext;
-
-    handleKeyPress (e) {
-        if (e.key === 'Tab') {
-            this.handleOnClose();
-        }
-
-        super.handleKeyPress(e);
-    }
-
     render () {
         const {
             canChangeLanguage,
@@ -52,13 +44,13 @@ class SettingsMenu extends BaseMenu {
             className={classNames(menuBarStyles.menuBarItem, menuBarStyles.hoverable, menuBarStyles.themeMenu, {
                 [menuBarStyles.active]: settingsMenuOpen
             })}
-            ref={this.settingsRef}
             role="button"
-            aria-expanded={this.context.isTopMenu(this.settingsRef)}
+            aria-expanded={this.context.isTopMenu(this.props.focusedRef)}
             tabIndex={0}
             aria-label="Settings"
             onClick={this.handleOnOpen}
             onKeyDown={this.handleKeyPress}
+            ref={this.focusedRef}
         >
             <img src={settingsIcon} />
             <span className={styles.dropdownLabel}>
@@ -71,7 +63,7 @@ class SettingsMenu extends BaseMenu {
             <img src={dropdownCaret} />
             <MenuBarMenu
                 className={menuBarStyles.menuBarMenu}
-                open={this.context.isOpenMenu(this.settingsRef)}
+                open={this.context.isOpenMenu(this.props.focusedRef)}
                 place={isRtl ? 'left' : 'right'}
                 onClose={this.handleOnClose}
             >
@@ -94,8 +86,6 @@ SettingsMenu.propTypes = {
     canChangeLanguage: PropTypes.bool,
     canChangeTheme: PropTypes.bool,
     isRtl: PropTypes.bool,
-    onClose: PropTypes.func,
-    onOpen: PropTypes.func,
     settingsMenuOpen: PropTypes.bool
 };
 

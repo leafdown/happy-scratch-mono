@@ -3,7 +3,21 @@ import React from 'react';
 import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
 
-// Subclasses must implement render, onSelectItem and define this.itemRefs and this.state.depth
+/* Subclasses must implement (some optionally):
+_______________________________________________
+render
+onSelectItem
+define this.itemRefs
+add onKeyDown={this.handleKeyPress}
+and onParentKeyPress={this.handleKeyPress} for MenuItem elements
+
+They should also receive:
+______________________
+onOpen,
+onClose,
+focusedRef,
+depth
+*/
 export class BaseMenu extends React.PureComponent {
     constructor (props) {
         super(props);
@@ -29,6 +43,12 @@ export class BaseMenu extends React.PureComponent {
     }
 
     handleKeyPress (e) {
+        if (this.props.depth === 1) {
+            if (e.key === 'Tab') {
+                this.handleOnClose();
+            }
+        }
+
         if (this.context.isTopMenu(this.props.focusedRef)) {
             this.handleKeyPressOpenMenu(e);
         } else if (!this.context.isOpenMenu(this.props.focusedRef) && (e.key === ' ' || e.key === 'ArrowRight')) {
@@ -94,4 +114,8 @@ BaseMenu.propTypes = {
     depth: PropTypes.number,
     onOpen: PropTypes.func,
     onClose: PropTypes.func
+};
+
+BaseMenu.defaultProps = {
+    onClose: () => {}
 };

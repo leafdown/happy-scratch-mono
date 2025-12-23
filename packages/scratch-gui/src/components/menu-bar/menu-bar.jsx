@@ -24,11 +24,10 @@ import ProjectTitleInput from './project-title-input.jsx';
 import AuthorInfo from './author-info.jsx';
 import AccountNav from '../../components/menu-bar/account-nav.jsx';
 import LoginDropdown from './login-dropdown.jsx';
-import SB3Downloader from '../../containers/sb3-downloader.jsx';
-import DeletionRestorer from '../../containers/deletion-restorer.jsx';
-import TurboMode from '../../containers/turbo-mode.jsx';
 import MenuBarHOC from '../../containers/menu-bar-hoc.jsx';
 import SettingsMenu from './settings-menu.jsx';
+import {FileMenu} from './file-menu.jsx';
+import {EditMenu} from './edit-menu.jsx';
 
 import {openTipsLibrary, openDebugModal} from '../../reducers/modals';
 import {setPlayer} from '../../reducers/mode';
@@ -84,8 +83,6 @@ import profileIcon from './icon--profile.png';
 import remixIcon from './icon--remix.svg';
 import dropdownCaret from './dropdown-caret.svg';
 import aboutIcon from './icon--about.svg';
-import fileIcon from './icon--file.svg';
-import editIcon from './icon--edit.svg';
 import debugIcon from '../debug-modal/icons/icon--debug.svg';
 
 import scratchLogo from './scratch-logo.svg';
@@ -197,6 +194,10 @@ class MenuBar extends React.Component {
             'getSaveToComputerHandler',
             'restoreOptionMessage'
         ]);
+
+        this.settingsRef = React.createRef();
+        this.fileRef = React.createRef();
+        this.editRef = React.createRef();
     }
     componentDidMount () {
         document.addEventListener('keydown', this.handleKeyPress);
@@ -390,32 +391,11 @@ class MenuBar extends React.Component {
         };
     }
     render () {
-        const saveNowMessage = (
-            <FormattedMessage
-                defaultMessage="Save now"
-                description="Menu bar item for saving now"
-                id="gui.menuBar.saveNow"
-            />
-        );
-        const createCopyMessage = (
-            <FormattedMessage
-                defaultMessage="Save as a copy"
-                description="Menu bar item for saving as a copy"
-                id="gui.menuBar.saveAsCopy"
-            />
-        );
         const remixMessage = (
             <FormattedMessage
                 defaultMessage="Remix"
                 description="Menu bar item for remixing"
                 id="gui.menuBar.remix"
-            />
-        );
-        const newProjectMessage = (
-            <FormattedMessage
-                defaultMessage="New"
-                description="Menu bar item for creating a new project"
-                id="gui.menuBar.new"
             />
         );
         const remixButton = (
@@ -461,141 +441,41 @@ class MenuBar extends React.Component {
                             />
                         </div>
                         {(this.props.canChangeTheme || this.props.canChangeLanguage) && (<SettingsMenu
+                            focusedRef={this.settingsRef}
+                            depth={1}
                             canChangeLanguage={this.props.canChangeLanguage}
                             canChangeTheme={this.props.canChangeTheme}
                             isRtl={this.props.isRtl}
-                            onRequestClose={this.props.onRequestCloseSettings}
-                            onRequestOpen={this.props.onClickSettings}
+                            onClose={this.props.onRequestCloseSettings}
+                            onOpen={this.props.onClickSettings}
                             settingsMenuOpen={this.props.settingsMenuOpen}
                         />)}
-                        {(this.props.canManageFiles) && (
-                            <div
-                                className={classNames(styles.menuBarItem, styles.hoverable, {
-                                    [styles.active]: this.props.fileMenuOpen
-                                })}
-                                onClick={this.props.onClickFile}
-                                aria-label="File Menu"
-                                role="button"
-                                tabIndex={0}
-                            >
-                                <img src={fileIcon} />
-                                <span className={styles.collapsibleLabel}>
-                                    <FormattedMessage
-                                        defaultMessage="File"
-                                        description="Text for file dropdown menu"
-                                        id="gui.menuBar.file"
-                                    />
-                                </span>
-                                <img src={dropdownCaret} />
-                                <MenuBarMenu
-                                    className={classNames(styles.menuBarMenu)}
-                                    open={this.props.fileMenuOpen}
-                                    place={this.props.isRtl ? 'left' : 'right'}
-                                    onRequestClose={this.props.onRequestCloseFile}
-                                >
-                                    <MenuSection>
-                                        <MenuItem
-                                            isRtl={this.props.isRtl}
-                                            onClick={this.handleClickNew}
-                                        >
-                                            {newProjectMessage}
-                                        </MenuItem>
-                                    </MenuSection>
-                                    {(this.props.canSave || this.props.canCreateCopy || this.props.canRemix) && (
-                                        <MenuSection>
-                                            {this.props.canSave && (
-                                                <MenuItem onClick={this.handleClickSave}>
-                                                    {saveNowMessage}
-                                                </MenuItem>
-                                            )}
-                                            {this.props.canCreateCopy && (
-                                                <MenuItem onClick={this.handleClickSaveAsCopy}>
-                                                    {createCopyMessage}
-                                                </MenuItem>
-                                            )}
-                                            {this.props.canRemix && (
-                                                <MenuItem onClick={this.handleClickRemix}>
-                                                    {remixMessage}
-                                                </MenuItem>
-                                            )}
-                                        </MenuSection>
-                                    )}
-                                    <MenuSection>
-                                        <MenuItem
-                                            onClick={this.props.onStartSelectingFileUpload}
-                                        >
-                                            {this.props.intl.formatMessage(sharedMessages.loadFromComputerTitle)}
-                                        </MenuItem>
-                                        <SB3Downloader>{(className, downloadProjectCallback) => (
-                                            <MenuItem
-                                                className={className}
-                                                onClick={this.getSaveToComputerHandler(downloadProjectCallback)}
-                                            >
-                                                <FormattedMessage
-                                                    defaultMessage="Save to your computer"
-                                                    description="Menu bar item for downloading a project to your computer" // eslint-disable-line max-len
-                                                    id="gui.menuBar.downloadToComputer"
-                                                />
-                                            </MenuItem>
-                                        )}</SB3Downloader>
-                                    </MenuSection>
-                                </MenuBarMenu>
-                            </div>
-                        )}
-                        <div
-                            className={classNames(styles.menuBarItem, styles.hoverable, {
-                                [styles.active]: this.props.editMenuOpen
-                            })}
-                            onClick={this.props.onClickEdit}
-                            role="button"
-                            aria-label="Edit Menu"
-                            tabIndex={0}
-                        >
-                            <img src={editIcon} />
-                            <span className={styles.collapsibleLabel}>
-                                <FormattedMessage
-                                    defaultMessage="Edit"
-                                    description="Text for edit dropdown menu"
-                                    id="gui.menuBar.edit"
-                                />
-                            </span>
-                            <img src={dropdownCaret} />
-                            <MenuBarMenu
-                                className={classNames(styles.menuBarMenu)}
-                                open={this.props.editMenuOpen}
-                                place={this.props.isRtl ? 'left' : 'right'}
-                                onRequestClose={this.props.onRequestCloseEdit}
-                            >
-                                <DeletionRestorer>{(handleRestore, {restorable, deletedItem}) => (
-                                    <MenuItem
-                                        className={classNames({[styles.disabled]: !restorable})}
-                                        onClick={this.handleRestoreOption(handleRestore)}
-                                    >
-                                        {this.restoreOptionMessage(deletedItem)}
-                                    </MenuItem>
-                                )}</DeletionRestorer>
-                                <MenuSection>
-                                    <TurboMode>{(toggleTurboMode, {turboMode}) => (
-                                        <MenuItem onClick={toggleTurboMode}>
-                                            {turboMode ? (
-                                                <FormattedMessage
-                                                    defaultMessage="Turn off Turbo Mode"
-                                                    description="Menu bar item for turning off turbo mode"
-                                                    id="gui.menuBar.turboModeOff"
-                                                />
-                                            ) : (
-                                                <FormattedMessage
-                                                    defaultMessage="Turn on Turbo Mode"
-                                                    description="Menu bar item for turning on turbo mode"
-                                                    id="gui.menuBar.turboModeOn"
-                                                />
-                                            )}
-                                        </MenuItem>
-                                    )}</TurboMode>
-                                </MenuSection>
-                            </MenuBarMenu>
-
-                        </div>
+                        {(this.props.canManageFiles) && (<FileMenu
+                            focusedRef={this.fileRef}
+                            depth={1}
+                            onOpen={this.props.onClickFile}
+                            onClose={this.props.onRequestCloseFile}
+                            onStartSelectingFileUpload={this.props.onStartSelectingFileUpload}
+                            onClickSave={this.handleClickSave}
+                            onClickSaveAsCopy={this.handleClickSaveAsCopy}
+                            onClickRemix={this.handleClickRemix}
+                            onClickNew={this.handleClickNew}
+                            getSaveToComputerHandler={this.getSaveToComputerHandler}
+                            canSave={this.props.canSave}
+                            canCreateCopy={this.props.canCreateCopy}
+                            canRemix={this.props.canRemix}
+                            intl={this.props.intl}
+                            isRtl={this.props.isRtl}
+                        />)}
+                        <EditMenu
+                            focusedRef={this.editRef}
+                            depth={1}
+                            onOpen={this.props.onClickEdit}
+                            onClose={this.props.onRequestCloseEdit}
+                            isRtl={this.props.isRtl}
+                            onRestoreOption={this.handleRestoreOption}
+                            restoreOptionMessage={this.restoreOptionMessage}
+                        />
                         {this.props.isTotallyNormal && (
                             <div
                                 className={classNames(styles.menuBarItem, styles.hoverable, {

@@ -87,13 +87,13 @@ const MenuItem = ({
 );
 
 MenuItem.propTypes = {
+    focusedRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     ariaLabel: PropTypes.string,
     ariaRole: PropTypes.string,
     children: PropTypes.node,
     className: PropTypes.string,
     expanded: PropTypes.bool,
     onClick: PropTypes.func,
-    focusedRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     onParentKeyPress: PropTypes.func
 };
 
