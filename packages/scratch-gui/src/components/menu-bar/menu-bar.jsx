@@ -461,8 +461,8 @@ class MenuBar extends React.Component {
                         {(this.props.canManageFiles) && (<FileMenu
                             menuRef={this.fileRef}
                             depth={1}
-                            onOpen={this.props.onClickFile}
-                            onClose={this.props.onRequestCloseFile}
+                            // onOpen={this.props.onClickFile}
+                            // onClose={this.props.onRequestCloseFile}
                             onStartSelectingFileUpload={this.props.onStartSelectingFileUpload}
                             onClickSave={this.handleClickSave}
                             onClickSaveAsCopy={this.handleClickSaveAsCopy}

@@ -88,7 +88,7 @@ class BaseMenu extends React.PureComponent {
     handleOnOpen () {
         if (this.context.isOpenMenu(this.menuRef)) return;
 
-        this.props.onOpen();
+        // this.props.onOpen();
         this.refocusItemByIndex(0);
 
         this.context.push(this.menuRef, this.props.depth);
@@ -107,7 +107,7 @@ class BaseMenu extends React.PureComponent {
             this.refocusRef(this.menuRef);
         });
 
-        this.props.onClose();
+        // this.props.onClose();
     }
 
     isExpanded () {
@@ -118,8 +118,8 @@ class BaseMenu extends React.PureComponent {
 BaseMenu.propTypes = {
     menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     depth: PropTypes.number,
-    onOpen: PropTypes.func,
-    onClose: PropTypes.func,
+    // onOpen: PropTypes.func,
+    // onClose: PropTypes.func,
     clearOnItemSelect: PropTypes.bool
 };
 
