@@ -1,7 +1,6 @@
 import classNames from 'classnames';
-import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
-import React from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {FormattedMessage, defineMessage} from 'react-intl';
 import {connect} from 'react-redux';
 import locales from 'scratch-l10n';
@@ -9,14 +8,13 @@ import locales from 'scratch-l10n';
 import check from './check.svg';
 import {MenuItem, Submenu} from '../menu/menu.jsx';
 import languageIcon from '../language-selector/language-icon.svg';
-import {closeLanguageMenu, openLanguageMenu} from '../../reducers/menus.js';
 import {selectLocale} from '../../reducers/locales.js';
+import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 
 import styles from './settings-menu.css';
 import intlShape from '../../lib/intlShape.js';
 
 import dropdownCaret from './dropdown-caret.svg';
-import BaseMenu from './base-menu';
 
 const languageMenu = defineMessage({
     id: 'languageMenu.aria.languageMenu',
@@ -24,112 +22,113 @@ const languageMenu = defineMessage({
     description: 'ARIA label for language menu'
 });
 
-class LanguageMenu extends BaseMenu {
-    constructor (props) {
-        super(props);
-        bindAll(this, [
-            'setRef',
-            'handleMouseOver'
-        ]);
+const LanguageMenu = props => {
+    const {
+        intl,
+        currentLocale,
+        menuRef,
+        isRtl,
+        onChangeLanguage
+    } = props;
 
-        this.itemRefs = Object.keys(locales).map(() => React.createRef());
-    }
+    const itemRefs = React.useMemo(
+        () => Object.keys(locales).map(() => React.createRef()),
+        []
+    );
+    let selectedRef = useRef(null);
 
-    componentDidUpdate (prevProps) {
-        // If the submenu has been toggled open, try scrolling the selected option into view.
-        if (!prevProps.menuOpen && this.props.menuOpen && this.selectedRef) {
-            this.selectedRef.scrollIntoView({block: 'center'});
+    const {
+        isExpanded,
+        handleKeyPress,
+        handleKeyPressOpenMenu,
+        handleOnOpen
+    } = useMenuNavigation({
+        menuRef,
+        itemRefs,
+        depth: 2,
+        defaultIndexOnOpen: (Object.keys(locales).indexOf(currentLocale))
+    });
+
+    useEffect(() => {
+        const selectedIndex = Object.keys(locales).indexOf(currentLocale);
+        if (isExpanded() && selectedIndex >= 0 && itemRefs[selectedIndex]?.current) {
+            itemRefs[selectedIndex].current.scrollIntoView({block: 'center'});
         }
-    }
+    }, [currentLocale, isExpanded, itemRefs]);
 
-    setRef (component) {
-        this.selectedRef = component;
-    }
+    const setRef = useCallback(component => {
+        selectedRef = component;
+    }, []);
 
-    handleMouseOver () {
+    const handleMouseOver = useCallback(() => {
         // If we are using hover rather than clicks for submenus, scroll the selected option into view
-        if (!this.props.menuOpen && this.selectedRef) {
-            this.selectedRef.scrollIntoView({block: 'center'});
+        if (isExpanded() && selectedRef) {
+            selectedRef.scrollIntoView({block: 'center'});
         }
-    }
+    }, [isExpanded]);
 
-    handleOnOpen () {
-        super.handleOnOpen();
-        this.refocusItemByIndex(Object.keys(locales).indexOf(this.props.currentLocale));
-    }
-
-    render () {
-        const {
-            intl,
-            currentLocale,
-            menuRef,
-            isRtl,
-            onChangeLanguage
-        } = this.props;
-
-        return (
-            <MenuItem expanded={this.isExpanded()}>
-                <div
-                    className={styles.option}
-                    onClick={this.handleOnOpen}
-                    onMouseOver={this.handleMouseOver}
-                    ref={menuRef}
-                    aria-label={intl.formatMessage(languageMenu)}
-                    aria-expanded={this.isExpanded()}
-                    role="button"
-                    tabIndex={-1}
-                    onKeyDown={this.handleKeyPress}
-                >
-                    <img
-                        className={styles.icon}
-                        src={languageIcon}
+    return (
+        <MenuItem expanded={isExpanded()}>
+            <div
+                className={styles.option}
+                onClick={handleOnOpen}
+                onMouseOver={handleMouseOver}
+                ref={menuRef}
+                aria-label={intl.formatMessage(languageMenu)}
+                aria-expanded={isExpanded()}
+                role="button"
+                tabIndex={-1}
+                onKeyDown={handleKeyPress}
+            >
+                <img
+                    className={styles.icon}
+                    src={languageIcon}
+                />
+                <span className={styles.submenuLabel}>
+                    <FormattedMessage
+                        defaultMessage="Language"
+                        description="Language sub-menu"
+                        id="gui.menuBar.language"
                     />
-                    <span className={styles.submenuLabel}>
-                        <FormattedMessage
-                            defaultMessage="Language"
-                            description="Language sub-menu"
-                            id="gui.menuBar.language"
-                        />
-                    </span>
-                    <img
-                        className={styles.expandCaret}
-                        src={dropdownCaret}
-                    />
-                </div>
-                <Submenu
-                    className={styles.languageSubmenu}
-                    place={isRtl ? 'left' : 'right'}
-                >
-                    {
-                        Object.keys(locales)
-                            .map((locale, index) => {
-                                const isSelected = currentLocale === locale;
+                </span>
+                <img
+                    className={styles.expandCaret}
+                    src={dropdownCaret}
+                />
+            </div>
+            <Submenu
+                className={styles.languageSubmenu}
+                place={isRtl ? 'left' : 'right'}
+            >
+                {
+                    Object.keys(locales)
+                        .map((locale, index) => {
+                            const isSelected = currentLocale === locale;
 
-                                return (<MenuItem
-                                    key={locale}
-                                    className={styles.languageMenuItem}
-                                    // eslint-disable-next-line react/jsx-no-bind
-                                    onClick={() => onChangeLanguage(locale)}
-                                    menuRef={this.itemRefs[index]}
-                                    onParentKeyPress={this.handleKeyPressOpenMenu}
-                                    isSelected={isSelected}
-                                >
-                                    <img
-                                        className={classNames(styles.check, {
-                                            [styles.selected]: isSelected
-                                        })}
-                                        src={check}
-                                        {...(isSelected && {ref: this.setRef})}
-                                    />
-                                    {locales[locale].name}
-                                </MenuItem>);
-                            })
-                    }
-                </Submenu>
-            </MenuItem>
-        );
-    }
-}
+                            return (<MenuItem
+                                key={locale}
+                                className={styles.languageMenuItem}
+                                // eslint-disable-next-line react/jsx-no-bind
+                                onClick={() => onChangeLanguage(locale)}
+                                menuRef={itemRefs[index]}
+                                onParentKeyPress={handleKeyPressOpenMenu}
+                                isSelected={isSelected}
+                            >
+                                <img
+                                    className={classNames(styles.check, {
+                                        [styles.selected]: isSelected
+                                    })}
+                                    src={check}
+                                    {...(isSelected && {ref: setRef})}
+                                />
+                                {locales[locale].name}
+                            </MenuItem>);
+                        })
+                }
+            </Submenu>
+        </MenuItem>
+    );
+};
 
 LanguageMenu.propTypes = {
     intl: intlShape,
@@ -137,9 +136,7 @@ LanguageMenu.propTypes = {
     menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     isRtl: PropTypes.bool,
     menuOpen: PropTypes.bool,
-    onChangeLanguage: PropTypes.func,
-    onOpen: PropTypes.func,
-    onClose: PropTypes.func
+    onChangeLanguage: PropTypes.func
 };
 
 const mapStateToProps = state => ({
@@ -151,9 +148,7 @@ const mapStateToProps = state => ({
 const mapDispatchToProps = dispatch => ({
     onChangeLanguage: locale => {
         dispatch(selectLocale(locale));
-    },
-    onOpen: () => dispatch(openLanguageMenu()),
-    onClose: () => dispatch(closeLanguageMenu())
+    }
 });
 
 export default connect(

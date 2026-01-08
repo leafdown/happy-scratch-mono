@@ -1,8 +1,9 @@
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import React from 'react';
-import {FormattedMessage, defineMessage, defineMessages} from 'react-intl';
+import React, {useRef, useMemo} from 'react';
+import {FormattedMessage, defineMessages} from 'react-intl';
 import {connect} from 'react-redux';
+import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 
 import LanguageMenu from './language-menu.jsx';
 import MenuBarMenu from './menu-bar-menu.jsx';
@@ -20,10 +21,8 @@ import styles from './settings-menu.css';
 
 import dropdownCaret from './dropdown-caret.svg';
 import settingsIcon from './icon--settings.svg';
-import BaseMenu from './base-menu.jsx';
 
 import themeIcon from '../../lib/assets/icon--theme.svg';
-import {openColorModeMenu, openThemeMenu} from '../../reducers/menus.js';
 import intlShape from '../../lib/intlShape.js';
 
 const ariaMessages = defineMessages({
@@ -46,125 +45,143 @@ const ariaMessages = defineMessages({
 
 const enabledColorModes = [DEFAULT_MODE, HIGH_CONTRAST_MODE];
 
-class SettingsMenu extends BaseMenu {
-    constructor (props) {
-        super(props);
+/**
+ * SettingsMenu component – renders the "Settings" dropdown in the menu bar.
+ * @param {object} props - Props
+ * @param {object} props.intl – React Intl object for messages.
+ * @param {boolean} props.canChangeLanguage – Show language menu.
+ * @param {boolean} props.canChangeColorMode – Show color mode menu.
+ * @param {boolean} props.canChangeTheme – Show theme menu.
+ * @param {boolean} props.hasActiveMembership – For theme availability.
+ * @param {boolean} props.isRtl – Right-to-left layout.
+ * @param {string} props.activeColorMode – Current color mode.
+ * @param {() => void} props.onChangeColorMode – Callback to change color mode.
+ * @param {string} props.activeTheme – Current theme key.
+ * @param {() => void} props.onChangeTheme – Callback to change theme.
+ * @returns {React.ReactNode} Settings menu dropdown.
+ */
+const SettingsMenu = props => {
+    const {
+        menuRef,
+        canChangeLanguage,
+        canChangeColorMode,
+        canChangeTheme,
+        hasActiveMembership,
+        intl,
+        isRtl,
+        activeColorMode,
+        onChangeColorMode,
+        activeTheme,
+        onChangeTheme
+    } = props;
 
-        this.languageRef = React.createRef();
-        this.themeRef = React.createRef();
-        this.colorRef = React.createRef();
-        this.itemRefs = [
-            ...(this.props.canChangeLanguage ? [this.languageRef] : []),
-            ...(this.props.canChangeTheme && this.props.availableThemesLength > 1 ? [this.themeRef] : []),
-            ...(this.props.canChangeColorMode ? [this.colorRef] : [])
-        ];
-    }
+    const enabledColorModesMap = useMemo(() => Object.keys(colorModeMap).reduce((acc, colorMode) => {
+        if (enabledColorModes.includes(colorMode)) {
+            acc[colorMode] = colorModeMap[colorMode];
+        }
+        return acc;
+    }, {}), []);
+    const availableThemesMap = useMemo(() => Object.keys(themeMap).reduce((acc, themeKey) => {
+        const theme = themeMap[themeKey];
+        if (theme.isAvailable?.({hasActiveMembership})) {
+            acc[themeKey] = theme;
+        }
+        return acc;
+    }, {}), [hasActiveMembership]);
+    const availableThemesLength = useMemo(() => Object.keys(availableThemesMap).length, [availableThemesMap]);
 
-    render () {
-        const {
-            canChangeLanguage,
-            canChangeColorMode,
-            canChangeTheme,
-            hasActiveMembership,
-            intl,
-            isRtl,
-            activeColorMode,
-            onChangeColorMode,
-            onRequestOpenColorMode,
-            onRequestOpenTheme,
-            activeTheme,
-            onChangeTheme
-        } = this.props;
+    const languageRef = useRef(null);
+    const themeRef = useRef(null);
+    const colorRef = useRef(null);
+    const itemRefs = [
+        ...(canChangeLanguage ? [languageRef] : []),
+        ...(canChangeTheme && availableThemesLength > 1 ? [themeRef] : []),
+        ...(canChangeColorMode ? [colorRef] : [])
+    ];
 
-        const enabledColorModesMap = Object.keys(colorModeMap).reduce((acc, colorMode) => {
-            if (enabledColorModes.includes(colorMode)) {
-                acc[colorMode] = colorModeMap[colorMode];
-            }
-            return acc;
-        }, {});
-        const availableThemesMap = Object.keys(themeMap).reduce((acc, themeKey) => {
-            const theme = themeMap[themeKey];
-            if (theme.isAvailable?.({hasActiveMembership})) {
-                acc[themeKey] = theme;
-            }
-            return acc;
-        }, {});
-        const availableThemesLength = Object.keys(availableThemesMap).length;
+    const {
+        isExpanded,
+        handleOnOpen,
+        handleOnClose,
+        handleKeyPress
+    } = useMenuNavigation({
+        menuRef,
+        itemRefs,
+        depth: 1
+    });
 
-        return (<div
-            className={classNames(menuBarStyles.menuBarItem, menuBarStyles.hoverable, menuBarStyles.themeMenu, {
-                [menuBarStyles.active]: this.isExpanded()
-            })}
-            role="button"
-            aria-expanded={this.isExpanded()}
-            tabIndex={0}
-            aria-label={intl.formatMessage(ariaMessages.settingsMenu)}
-            onClick={this.handleOnOpen}
-            onKeyDown={this.handleKeyPress}
-            ref={this.menuRef}
+    return (<div
+        className={classNames(menuBarStyles.menuBarItem, menuBarStyles.hoverable, menuBarStyles.themeMenu, {
+            [menuBarStyles.active]: isExpanded()
+        })}
+        role="button"
+        aria-expanded={isExpanded()}
+        tabIndex={0}
+        aria-label={intl.formatMessage(ariaMessages.settingsMenu)}
+        onClick={handleOnOpen}
+        onKeyDown={handleKeyPress}
+        ref={menuRef}
+    >
+        <img src={settingsIcon} />
+        <span className={styles.dropdownLabel}>
+            <FormattedMessage
+                defaultMessage="Settings"
+                description="Settings menu"
+                id="gui.menuBar.settings"
+            />
+        </span>
+        <img src={dropdownCaret} />
+        <MenuBarMenu
+            className={menuBarStyles.menuBarMenu}
+            open={isExpanded()}
+            place={isRtl ? 'left' : 'right'}
+            onRequestClose={handleOnClose}
         >
-            <img src={settingsIcon} />
-            <span className={styles.dropdownLabel}>
-                <FormattedMessage
-                    defaultMessage="Settings"
-                    description="Settings menu"
-                    id="gui.menuBar.settings"
-                />
-            </span>
-            <img src={dropdownCaret} />
-            <MenuBarMenu
-                className={menuBarStyles.menuBarMenu}
-                open={this.isExpanded()}
-                place={isRtl ? 'left' : 'right'}
-                onRequestClose={this.handleOnClose}
-            >
-                <MenuSection>
-                    {canChangeLanguage && <LanguageMenu
-                        intl={intl}
-                        menuRef={this.languageRef}
+            <MenuSection>
+                {canChangeLanguage && <LanguageMenu
+                    intl={intl}
+                    menuRef={languageRef}
+                    depth={2}
+                />}
+                {canChangeTheme &&
+                    // TODO: Consider always showing the theme menu, even if there is a single available theme
+                    availableThemesLength > 1 &&
+                    <PreferenceMenu
+                        ariaLabel={intl.formatMessage(ariaMessages.themeMenu)}
+                        menuRef={themeRef}
                         depth={2}
-                    />}
-                    {canChangeTheme &&
-                        // TODO: Consider always showing the theme menu, even if there is a single available theme
-                        availableThemesLength > 1 &&
-                        <PreferenceMenu
-                            ariaLabel={intl.formatMessage(ariaMessages.themeMenu)}
-                            menuRef={this.themeRef}
-                            depth={2}
-                            itemsMap={availableThemesMap}
-                            onChange={onChangeTheme}
-                            defaultMenuIconSrc={themeIcon}
-                            submenuLabel={{
-                                defaultMessage: 'Theme',
-                                description: 'Theme sub-menu',
-                                id: 'gui.menuBar.theme'
-                            }}
-                            selectedItemKey={activeTheme}
-                            isRtl={isRtl}
-                            onOpen={onRequestOpenTheme}
-                        />}
-                    {canChangeColorMode && <PreferenceMenu
-                        ariaLabel={intl.formatMessage(ariaMessages.colorMenu)}
-                        menuRef={this.colorRef}
-                        depth={2}
-                        itemsMap={enabledColorModesMap}
-                        onChange={onChangeColorMode}
+                        itemsMap={availableThemesMap}
+                        onChange={onChangeTheme}
+                        defaultMenuIconSrc={themeIcon}
                         submenuLabel={{
-                            defaultMessage: 'Color Mode',
-                            description: 'Color mode sub-menu',
-                            id: 'gui.menuBar.colorMode'
+                            defaultMessage: 'Theme',
+                            description: 'Theme sub-menu',
+                            id: 'gui.menuBar.theme'
                         }}
-                        selectedItemKey={activeColorMode}
+                        selectedItemKey={activeTheme}
                         isRtl={isRtl}
-                        onOpen={onRequestOpenColorMode}
                     />}
-                </MenuSection>
-            </MenuBarMenu>
-        </div>);
-    }
+                {canChangeColorMode && <PreferenceMenu
+                    ariaLabel={intl.formatMessage(ariaMessages.colorMenu)}
+                    menuRef={colorRef}
+                    depth={2}
+                    itemsMap={enabledColorModesMap}
+                    onChange={onChangeColorMode}
+                    submenuLabel={{
+                        defaultMessage: 'Color Mode',
+                        description: 'Color mode sub-menu',
+                        id: 'gui.menuBar.colorMode'
+                    }}
+                    selectedItemKey={activeColorMode}
+                    isRtl={isRtl}
+                />}
+            </MenuSection>
+        </MenuBarMenu>
+    </div>);
 };
 
 SettingsMenu.propTypes = {
+    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     intl: intlShape,
     canChangeLanguage: PropTypes.bool,
     canChangeColorMode: PropTypes.bool,
@@ -173,10 +190,8 @@ SettingsMenu.propTypes = {
     isRtl: PropTypes.bool,
     activeColorMode: PropTypes.string,
     onChangeColorMode: PropTypes.func,
-    onRequestOpenColorMode: PropTypes.func,
     activeTheme: PropTypes.string,
-    onChangeTheme: PropTypes.func,
-    onRequestOpenTheme: PropTypes.func
+    onChangeTheme: PropTypes.func
 };
 
 const mapStateToProps = state => ({
@@ -185,12 +200,6 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-    onRequestOpenColorMode: () => {
-        dispatch(openColorModeMenu());
-    },
-    onRequestOpenTheme: () => {
-        dispatch(openThemeMenu());
-    },
     onChangeColorMode: colorMode => {
         dispatch(setColorMode(colorMode));
         ownProps.onClose();

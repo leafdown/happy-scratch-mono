@@ -34,7 +34,7 @@ export class MenuRefProvider extends React.Component {
 
     pop () {
         this.setState(prev => ({
-            stack: prev.refStack.slice(0, prev.refStack.length - 1)
+            refStack: prev.refStack.slice(0, prev.refStack.length - 1)
         }));
     }
 
@@ -52,6 +52,7 @@ export class MenuRefProvider extends React.Component {
     }
 
     clear () {
+        console.log("clearing now");
         this.setState({refStack: []});
     }
 
