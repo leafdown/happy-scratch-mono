@@ -45,21 +45,6 @@ const ariaMessages = defineMessages({
 
 const enabledColorModes = [DEFAULT_MODE, HIGH_CONTRAST_MODE];
 
-/**
- * SettingsMenu component – renders the "Settings" dropdown in the menu bar.
- * @param {object} props - Props
- * @param {object} props.intl – React Intl object for messages.
- * @param {boolean} props.canChangeLanguage – Show language menu.
- * @param {boolean} props.canChangeColorMode – Show color mode menu.
- * @param {boolean} props.canChangeTheme – Show theme menu.
- * @param {boolean} props.hasActiveMembership – For theme availability.
- * @param {boolean} props.isRtl – Right-to-left layout.
- * @param {string} props.activeColorMode – Current color mode.
- * @param {() => void} props.onChangeColorMode – Callback to change color mode.
- * @param {string} props.activeTheme – Current theme key.
- * @param {() => void} props.onChangeTheme – Callback to change theme.
- * @returns {React.ReactNode} Settings menu dropdown.
- */
 const SettingsMenu = props => {
     const {
         menuRef,
