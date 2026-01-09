@@ -125,6 +125,7 @@ const PreferenceMenu = props => {
 
 PreferenceMenu.propTypes = {
     ariaLabel: PropTypes.string,
+    menuRef: propTypes.ref.isRequired,
     itemsMap: PropTypes.objectOf(PropTypes.shape({
         icon: PropTypes.string,
         label: intlMessageShape.isRequired
@@ -133,8 +134,7 @@ PreferenceMenu.propTypes = {
     defaultMenuIconSrc: PropTypes.string,
     submenuLabel: intlMessageShape.isRequired,
     selectedItemKey: PropTypes.string,
-    isRtl: PropTypes.bool,
-    menuRef: propTypes.ref
+    isRtl: PropTypes.bool
 };
 
 const mapStateToProps = state => ({

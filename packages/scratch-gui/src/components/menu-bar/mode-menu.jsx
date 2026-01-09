@@ -2,6 +2,7 @@ import React from 'react';
 import styles from './menu-bar.css';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
+import {connect} from 'react-redux';
 
 import {FormattedMessage, defineMessage} from 'react-intl';
 import MenuBarMenu from './menu-bar-menu.jsx';
@@ -110,13 +111,18 @@ const ModeMenu = props => {
 };
 
 ModeMenu.propTypes = {
-    intl: intlShape,
-    menuRef: propTypes.ref,
-    onSetMode: PropTypes.func,
-    modeNow: PropTypes.bool,
-    mode2020: PropTypes.bool,
+    intl: intlShape.isRequired,
+    menuRef: propTypes.ref.isRequired,
+    onSetMode: PropTypes.func.isRequired,
+    modeNow: PropTypes.bool.isRequired,
+    mode2020: PropTypes.bool.isRequired,
     isRtl: PropTypes.bool
-
 };
 
-export default ModeMenu;
+const mapStateToProps = state => ({
+    isRtl: state.locales.isRtl
+});
+
+export default connect(
+    mapStateToProps
+)(ModeMenu);

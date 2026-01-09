@@ -167,13 +167,13 @@ const SettingsMenu = props => {
 };
 
 SettingsMenu.propTypes = {
-    menuRef: propTypes.ref,
-    intl: intlShape,
-    canChangeLanguage: PropTypes.bool,
-    canChangeColorMode: PropTypes.bool,
-    canChangeTheme: PropTypes.bool,
-    hasActiveMembership: PropTypes.bool,
-    isRtl: PropTypes.bool,
+    menuRef: propTypes.ref.isRequired,
+    intl: intlShape.isRequired,
+    canChangeLanguage: PropTypes.bool.isRequired,
+    canChangeColorMode: PropTypes.bool.isRequired,
+    canChangeTheme: PropTypes.bool.isRequired,
+    hasActiveMembership: PropTypes.bool.isRequired,
+    isRtl: PropTypes.bool.isRequired,
     activeColorMode: PropTypes.string,
     onChangeColorMode: PropTypes.func,
     activeTheme: PropTypes.string,

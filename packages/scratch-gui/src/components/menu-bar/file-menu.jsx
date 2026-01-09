@@ -2,6 +2,7 @@ import React, {useRef} from 'react';
 import styles from './menu-bar.css';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
+import {connect} from 'react-redux';
 
 import fileIcon from './icon--file.svg';
 import {FormattedMessage, defineMessage} from 'react-intl';
@@ -14,6 +15,16 @@ import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 import sharedMessages from '../../lib/shared-messages';
 import intlShape from '../../lib/intlShape.js';
 import propTypes from '../../lib/prop-types.js';
+
+import {
+    autoUpdateProject,
+    getIsUpdating,
+    getIsShowingProject,
+    manualUpdateProject,
+    requestNewProject,
+    remixProject,
+    saveProjectAsCopy
+} from '../../reducers/project-state';
 
 const fileMenu = defineMessage({
     id: 'fileMenu.aria.fileMenu',
@@ -185,19 +196,25 @@ const FileMenu = props => {
 };
 
 FileMenu.propTypes = {
-    menuRef: propTypes.ref,
-    intl: intlShape,
+    menuRef: propTypes.ref.isRequired,
+    intl: intlShape.isRequired,
     isRtl: PropTypes.bool,
-    canSave: PropTypes.bool,
-    canCreateCopy: PropTypes.bool,
-    canRemix: PropTypes.bool,
-    onStartSelectingFileUpload: PropTypes.func,
-    onClickSave: PropTypes.func,
-    onClickSaveAsCopy: PropTypes.func,
-    onClickRemix: PropTypes.func,
-    onClickNew: PropTypes.func,
-    getSaveToComputerHandler: PropTypes.func,
-    remixMessage: PropTypes.node
+    canSave: PropTypes.bool.isRequired,
+    canCreateCopy: PropTypes.bool.isRequired,
+    canRemix: PropTypes.bool.isRequired,
+    onStartSelectingFileUpload: PropTypes.func.isRequired,
+    onClickSave: PropTypes.func.isRequired,
+    onClickSaveAsCopy: PropTypes.func.isRequired,
+    onClickRemix: PropTypes.func.isRequired,
+    onClickNew: PropTypes.func.isRequired,
+    getSaveToComputerHandler: PropTypes.func.isRequired,
+    remixMessage: PropTypes.node.isRequired
 };
 
-export default FileMenu;
+const mapStateToProps = state => ({
+    isRtl: state.locales.isRtl
+});
+
+export default connect(
+    mapStateToProps
+)(FileMenu);

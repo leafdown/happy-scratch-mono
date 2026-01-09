@@ -2,6 +2,7 @@ import React, {useRef} from 'react';
 import styles from './menu-bar.css';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
+import {connect} from 'react-redux';
 
 import editIcon from './icon--edit.svg';
 import {FormattedMessage, defineMessage} from 'react-intl';
@@ -115,10 +116,16 @@ const EditMenu = props => {
 
 EditMenu.propTypes = {
     intl: intlShape.isRequired,
-    menuRef: propTypes.ref,
+    menuRef: propTypes.ref.isRequired,
     isRtl: PropTypes.bool,
-    restoreOptionMessage: PropTypes.func,
-    onRestoreOption: PropTypes.func
+    restoreOptionMessage: PropTypes.func.isRequired,
+    onRestoreOption: PropTypes.func.isRequired
 };
 
-export default EditMenu;
+const mapStateToProps = state => ({
+    isRtl: state.locales.isRtl
+});
+
+export default connect(
+    mapStateToProps
+)(EditMenu);

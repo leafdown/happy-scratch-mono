@@ -132,11 +132,10 @@ const LanguageMenu = props => {
 };
 
 LanguageMenu.propTypes = {
-    intl: intlShape,
+    menuRef: propTypes.ref.isRequired,
+    intl: intlShape.isRequired,
     currentLocale: PropTypes.string,
-    menuRef: propTypes.ref,
     isRtl: PropTypes.bool,
-    menuOpen: PropTypes.bool,
     onChangeLanguage: PropTypes.func
 };
 
