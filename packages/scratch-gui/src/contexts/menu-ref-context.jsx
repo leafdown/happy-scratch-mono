@@ -1,94 +1,77 @@
-import React from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import PropTypes from 'prop-types';
-import bindAll from 'lodash.bindall';
 
 export const MenuRefContext = React.createContext(null);
 
-export class MenuRefProvider extends React.Component {
-    constructor (props) {
-        super(props);
+export const MenuRefProvider = ({children}) => {
+    const [refStack, setRefStack] = useState([]);
 
-        this.state = {
-            refStack: []
-        };
-
-        bindAll(this, [
-            'push',
-            'pop',
-            'cut',
-            'clear',
-            'isTopMenu',
-            'isOpenMenu',
-            'bottomMenu'
-        ]);
-    }
-
-    push (ref, depth) {
-        if (depth <= this.state.refStack.length) {
-            this.cut(this.state.refStack[depth - 1]);
-        }
-
-        this.setState(prev => ({
-            refStack: [...prev.refStack, ref]
-        }));
-    }
-
-    pop () {
-        this.setState(prev => ({
-            refStack: prev.refStack.slice(0, prev.refStack.length - 1)
-        }));
-    }
-
-    cut (ref) {
-        this.setState(prev => {
-            const refs = prev.refStack;
-            const index = refs.indexOf(ref);
-
-            if (index === -1) return {refStack: refs};
-
-            return {
-                refStack: refs.slice(0, index)
-            };
+    const cut = useCallback(ref => {
+        setRefStack(prev => {
+            const index = prev.indexOf(ref);
+            if (index === -1) return prev;
+            return prev.slice(0, index);
         });
-    }
+    }, []);
 
-    clear () {
-        this.setState({refStack: []});
-    }
+    const push = useCallback((ref, depth) => {
+        setRefStack(prev => {
+            let next = prev;
 
-    bottomMenu () {
-        const {refStack} = this.state;
-        return refStack.length > 0 ? refStack[0] : null;
-    }
+            if (depth <= prev.length) {
+                const cutRef = prev[depth - 1];
+                const index = prev.indexOf(cutRef);
+                if (index !== -1) {
+                    next = prev.slice(0, index);
+                }
+            }
 
-    isTopMenu (ref) {
-        const {refStack} = this.state;
-        return refStack.length > 0 && refStack[refStack.length - 1] === ref;
-    }
+            return [...next, ref];
+        });
+    }, []);
 
-    isOpenMenu (ref) {
-        return this.state.refStack.includes(ref);
-    }
+     
+    const pop = useCallback(() => {
+        setRefStack(prev => prev.slice(0, prev.length - 1));
+    }, []);
 
-    render () {
-        const value = {
-            refStack: this.state.refStack,
-            push: this.push,
-            pop: this.pop,
-            cut: this.cut,
-            clear: this.clear,
-            isTopMenu: this.isTopMenu,
-            isOpenMenu: this.isOpenMenu,
-            bottomMenu: this.bottomMenu
-        };
+    const clear = useCallback(() => {
+        setRefStack([]);
+    }, []);
 
-        return (
-            <MenuRefContext.Provider value={value}>
-                {this.props.children}
-            </MenuRefContext.Provider>
-        );
-    }
-}
+    const bottomMenu = useMemo(() => (refStack.length > 0 ? refStack[0] : null), [refStack]);
+
+    const isTopMenu = useCallback(ref => (refStack.length > 0 &&
+        refStack[refStack.length - 1] === ref), [refStack]);
+
+    const isOpenMenu = useCallback(ref => (refStack.includes(ref)), [refStack]);
+
+    const value = useMemo(() => ({
+        refStack,
+        push,
+        pop,
+        cut,
+        clear,
+        isTopMenu,
+        isOpenMenu,
+        bottomMenu
+    }), [
+        refStack,
+        push,
+        pop,
+        cut,
+        clear,
+        isTopMenu,
+        isOpenMenu,
+        bottomMenu
+    ]);
+
+    return (
+        <MenuRefContext.Provider value={value}>
+            {children}
+        </MenuRefContext.Provider>
+    );
+};
 
 MenuRefProvider.propTypes = {
     children: PropTypes.node
