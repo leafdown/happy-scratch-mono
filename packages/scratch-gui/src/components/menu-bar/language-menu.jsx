@@ -15,6 +15,7 @@ import styles from './settings-menu.css';
 import intlShape from '../../lib/intlShape.js';
 
 import dropdownCaret from './dropdown-caret.svg';
+import propTypes from '../../lib/prop-types.js';
 
 const languageMenu = defineMessage({
     id: 'languageMenu.aria.languageMenu',
@@ -110,7 +111,7 @@ const LanguageMenu = props => {
                                 className={styles.languageMenuItem}
                                 // eslint-disable-next-line react/jsx-no-bind
                                 onClick={() => onChangeLanguage(locale)}
-                                menuRef={itemRefs[index]}
+                                itemRef={itemRefs[index]}
                                 onParentKeyPress={handleKeyPressOpenMenu}
                                 isSelected={isSelected}
                             >
@@ -133,8 +134,7 @@ const LanguageMenu = props => {
 LanguageMenu.propTypes = {
     intl: intlShape,
     currentLocale: PropTypes.string,
-    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
-    settingsMenuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    menuRef: propTypes.ref,
     isRtl: PropTypes.bool,
     menuOpen: PropTypes.bool,
     onChangeLanguage: PropTypes.func

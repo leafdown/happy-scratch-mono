@@ -24,6 +24,7 @@ import settingsIcon from './icon--settings.svg';
 
 import themeIcon from '../../lib/assets/icon--theme.svg';
 import intlShape from '../../lib/intlShape.js';
+import propTypes from '../../lib/prop-types.js';
 
 const ariaMessages = defineMessages({
     settingsMenu: {
@@ -166,7 +167,7 @@ const SettingsMenu = props => {
 };
 
 SettingsMenu.propTypes = {
-    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    menuRef: propTypes.ref,
     intl: intlShape,
     canChangeLanguage: PropTypes.bool,
     canChangeColorMode: PropTypes.bool,

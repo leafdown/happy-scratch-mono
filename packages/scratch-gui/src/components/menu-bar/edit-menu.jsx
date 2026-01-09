@@ -12,6 +12,7 @@ import dropdownCaret from './dropdown-caret.svg';
 import DeletionRestorer from '../../containers/deletion-restorer.jsx';
 import TurboMode from '../../containers/turbo-mode.jsx';
 import intlShape from '../../lib/intlShape.js';
+import propTypes from '../../lib/prop-types.js';
 
 const editMenu = defineMessage({
     id: 'editMenu.aria.editMenu',
@@ -77,7 +78,7 @@ const EditMenu = props => {
                     <MenuItem
                         className={classNames({[styles.disabled]: !restorable})}
                         onClick={onRestoreOption(handleRestore)}
-                        menuRef={restoreRef}
+                        itemRef={restoreRef}
                         onParentKeyPress={handleKeyPressOpenMenu}
                         isDisabled={!restorable}
                     >
@@ -88,7 +89,7 @@ const EditMenu = props => {
                     <TurboMode>{(toggleTurboMode, {turboMode}) => (
                         <MenuItem
                             onClick={toggleTurboMode}
-                            menuRef={turboRef}
+                            itemRef={turboRef}
                             onParentKeyPress={handleKeyPressOpenMenu}
                         >
                             {turboMode ? (
@@ -114,7 +115,7 @@ const EditMenu = props => {
 
 EditMenu.propTypes = {
     intl: intlShape.isRequired,
-    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    menuRef: propTypes.ref,
     isRtl: PropTypes.bool,
     restoreOptionMessage: PropTypes.func,
     onRestoreOption: PropTypes.func

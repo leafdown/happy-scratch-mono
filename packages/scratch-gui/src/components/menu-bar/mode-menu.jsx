@@ -9,6 +9,7 @@ import {MenuItem, MenuSection} from '../menu/menu.jsx';
 import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 
 import intlShape from '../../lib/intlShape.js';
+import propTypes from '../../lib/prop-types.js';
 const modeMenu = defineMessage({
     id: 'modeMenu.aria.modeMenu',
     defaultMessage: 'Mode menu',
@@ -74,7 +75,7 @@ const ModeMenu = props => {
                 <MenuSection>
                     <MenuItem
                         onClick={onSetMode('NOW')}
-                        menuRef={normalRef}
+                        itemRef={normalRef}
                         onParentKeyPress={handleKeyPressOpenMenu}
                     >
                         <span className={classNames({[styles.inactive]: !modeNow})}>
@@ -89,7 +90,7 @@ const ModeMenu = props => {
                     </MenuItem>
                     <MenuItem
                         onClick={onSetMode('2020')}
-                        menuRef={caturdayRef}
+                        itemRef={caturdayRef}
                         onParentKeyPress={handleKeyPressOpenMenu}
                     >
                         <span className={classNames({[styles.inactive]: !mode2020})}>
@@ -110,7 +111,7 @@ const ModeMenu = props => {
 
 ModeMenu.propTypes = {
     intl: intlShape,
-    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    menuRef: propTypes.ref,
     onSetMode: PropTypes.func,
     modeNow: PropTypes.bool,
     mode2020: PropTypes.bool,

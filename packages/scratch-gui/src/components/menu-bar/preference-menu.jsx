@@ -11,6 +11,7 @@ import {MenuItem, Submenu} from '../menu/menu.jsx';
 import styles from './settings-menu.css';
 
 import dropdownCaret from './dropdown-caret.svg';
+import propTypes from '../../lib/prop-types.js';
 
 const intlMessageShape = PropTypes.shape({
     defaultMessage: PropTypes.string,
@@ -25,7 +26,7 @@ const PreferenceItem = props => {
         <MenuItem
             onClick={props.onClick}
             onParentKeyPress={props.onParentKeyPress}
-            menuRef={props.menuRef}
+            itemRef={props.itemRef}
             isSelected={props.isSelected}
         >
             <div className={styles.option}>
@@ -50,7 +51,7 @@ PreferenceItem.propTypes = {
         label: intlMessageShape.isRequired
     }),
     onParentKeyPress: PropTypes.func,
-    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)})
+    itemRef: PropTypes.shape({current: PropTypes.instanceOf(Element)})
 };
 
 const PreferenceMenu = props => {
@@ -114,7 +115,7 @@ const PreferenceMenu = props => {
                         // eslint-disable-next-line react/jsx-no-bind
                         onClick={() => onChange(itemKey)}
                         item={itemsMap[itemKey]}
-                        menuRef={itemRefs[index]}
+                        itemRef={itemRefs[index]}
                     />)
                 )}
             </Submenu>
@@ -133,7 +134,7 @@ PreferenceMenu.propTypes = {
     submenuLabel: intlMessageShape.isRequired,
     selectedItemKey: PropTypes.string,
     isRtl: PropTypes.bool,
-    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)})
+    menuRef: propTypes.ref
 };
 
 const mapStateToProps = state => ({

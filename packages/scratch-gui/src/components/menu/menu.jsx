@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 
 import styles from './menu.css';
+import propTypes from '../../lib/prop-types';
 
 const MenuComponent = ({
     className = '',
@@ -65,7 +66,7 @@ const MenuItem = ({
     isSelected = false,
     isDisabled = false,
     onClick,
-    menuRef,
+    itemRef,
     ariaLabel,
     ariaRole,
     onParentKeyPress
@@ -79,7 +80,7 @@ const MenuItem = ({
         )}
         onClick={onClick}
         tabIndex={-1}
-        ref={menuRef}
+        ref={itemRef}
         aria-label={ariaLabel}
         aria-selected={isSelected}
         aria-disabled={isDisabled}
@@ -91,7 +92,7 @@ const MenuItem = ({
 );
 
 MenuItem.propTypes = {
-    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    itemRef: propTypes.ref,
     ariaLabel: PropTypes.string,
     ariaRole: PropTypes.string,
     children: PropTypes.node,

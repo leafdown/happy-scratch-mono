@@ -13,6 +13,7 @@ import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 
 import sharedMessages from '../../lib/shared-messages';
 import intlShape from '../../lib/intlShape.js';
+import propTypes from '../../lib/prop-types.js';
 
 const fileMenu = defineMessage({
     id: 'fileMenu.aria.fileMenu',
@@ -124,7 +125,7 @@ const FileMenu = props => {
                     <MenuItem
                         isRtl={isRtl}
                         onClick={onClickNew}
-                        menuRef={newProjectRef}
+                        itemRef={newProjectRef}
                         onParentKeyPress={handleKeyPressOpenMenu}
                     >
                         {newProjectMessage}
@@ -135,7 +136,7 @@ const FileMenu = props => {
                         {canSave && (
                             <MenuItem
                                 onClick={onClickSave}
-                                menuRef={saveRef}
+                                itemRef={saveRef}
                                 onParentKeyPress={handleKeyPressOpenMenu}
                             >
                                 {saveNowMessage}
@@ -144,7 +145,7 @@ const FileMenu = props => {
                         {canCreateCopy && (
                             <MenuItem
                                 onClick={onClickSaveAsCopy}
-                                menuRef={createRef}
+                                itemRef={createRef}
                                 onParentKeyPress={handleKeyPressOpenMenu}
                             >
                                 {createCopyMessage}
@@ -153,7 +154,7 @@ const FileMenu = props => {
                         {canRemix && (
                             <MenuItem
                                 onClick={onClickRemix}
-                                menuRef={remixRef}
+                                itemRef={remixRef}
                                 onParentKeyPress={handleKeyPressOpenMenu}
                             >
                                 {remixMessage}
@@ -164,7 +165,7 @@ const FileMenu = props => {
                 <MenuSection>
                     <MenuItem
                         onClick={onStartSelectingFileUpload}
-                        menuRef={loadFromComputerRef}
+                        itemRef={loadFromComputerRef}
                         onParentKeyPress={handleKeyPressOpenMenu}
                     >
                         {intl.formatMessage(sharedMessages.loadFromComputerTitle)}
@@ -173,7 +174,7 @@ const FileMenu = props => {
                         <MenuItem
                             className={className}
                             onClick={getSaveToComputerHandler(downloadProjectCallback)}
-                            menuRef={saveToComputerRef}
+                            itemRef={saveToComputerRef}
                             onParentKeyPress={handleKeyPressOpenMenu}
                         >
                             <FormattedMessage
@@ -190,7 +191,7 @@ const FileMenu = props => {
 };
 
 FileMenu.propTypes = {
-    menuRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
+    menuRef: propTypes.ref,
     intl: intlShape,
     isRtl: PropTypes.bool,
     canSave: PropTypes.bool,
