@@ -88,6 +88,7 @@ export default function useMenuNavigation ({
     }, [focusedIndex, itemRefs, refocusRef]);
 
     const handleKeyPressOpenMenu = useCallback(e => {
+        // Logic for vertical menus, will need to change when implementing for vertical
         if (e.key === KEY.ARROW_DOWN) {
             e.preventDefault();
             handleMove(1);

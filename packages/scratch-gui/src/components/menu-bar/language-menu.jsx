@@ -32,7 +32,7 @@ const LanguageMenu = props => {
     const intl = useIntl();
 
     const itemRefs = React.useMemo(() => Object.keys(locales).map(() => React.createRef()), []);
-    let selectedRef = useRef(null);
+    const selectedRef = useRef(null);
 
     const {
         isExpanded,
@@ -54,7 +54,7 @@ const LanguageMenu = props => {
     }, [currentLocale, isExpanded, itemRefs]);
 
     const setRef = useCallback(component => {
-        selectedRef = component;
+        selectedRef.current = component;
     }, []);
 
     const handleMouseOver = useCallback(() => {

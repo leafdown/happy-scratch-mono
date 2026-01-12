@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useRef} from 'react';
 import styles from './menu-bar.css';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
@@ -32,8 +32,8 @@ const ModeMenu = props => {
     } = props;
     const intl = useIntl();
 
-    const normalRef = React.createRef();
-    const caturdayRef = React.createRef();
+    const normalRef = useRef(null);
+    const caturdayRef = useRef(null);
     
     const itemRefs = [
         normalRef,
