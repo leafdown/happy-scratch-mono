@@ -331,6 +331,8 @@ const GUIComponent = props => {
                         onRequestClose={onRequestCloseBackdropLibrary}
                     />
                 ) : null}
+                {/* TODO - in case of moving MenuRefProvider which seems likely,
+                make sure to move it from tests as well */}
                 {!menuBarHidden && <MenuRefProvider>
                     <MenuBar
                         ariaRole="banner"

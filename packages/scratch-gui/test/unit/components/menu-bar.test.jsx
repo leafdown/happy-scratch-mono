@@ -11,6 +11,7 @@ import {PLATFORM} from '../../../src/lib/platform';
 import configureStore from 'redux-mock-store';
 import {Provider} from 'react-redux';
 import VM from '@scratch/scratch-vm';
+import {MenuRefProvider} from '../../../src/contexts/menu-ref-context.jsx';
 
 describe('MenuBar Component', () => {
     const store = configureStore()({
@@ -37,7 +38,11 @@ describe('MenuBar Component', () => {
     });
 
     const getComponent = function (props = {}) {
-        return <Provider store={store}><MenuBar {...props} /></Provider>;
+        return (<Provider store={store}>
+            <MenuRefProvider>
+                <MenuBar {...props} />
+            </MenuRefProvider>
+        </Provider>);
     };
 
     test('menu bar with no About handler has no About button', () => {
