@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import {connect} from 'react-redux';
 import {compose} from 'redux';
-import {defineMessages, FormattedMessage, injectIntl} from 'react-intl';
+import {defineMessages, FormattedMessage, injectIntl, useIntl} from 'react-intl';
 import intlShape from '../../lib/intlShape.js';
 import PropTypes from 'prop-types';
 import bindAll from 'lodash.bindall';
@@ -97,6 +97,11 @@ const ariaMessages = defineMessages({
         id: 'gui.menuBar.home',
         defaultMessage: 'Home',
         description: 'ARIA text for the home button'
+    },
+    about: {
+        id: 'gui.menuBar.about',
+        defaultMessage: 'About',
+        description: 'ARIA text for the about button'
     }
 });
 
@@ -156,14 +161,17 @@ MenuItemTooltip.propTypes = {
     isRtl: PropTypes.bool
 };
 
-const AboutButton = props => (
-    <Button
+const AboutButton = props => {
+    const intl = useIntl();
+
+    return (<Button
         className={classNames(styles.menuBarItem, styles.hoverable)}
         iconClassName={styles.aboutIcon}
         iconSrc={aboutIcon}
         onClick={props.onClick}
-    />
-);
+        aria-label={intl.formatMessage(ariaMessages.about)}
+    />);
+};
 
 AboutButton.propTypes = {
     onClick: PropTypes.func.isRequired
