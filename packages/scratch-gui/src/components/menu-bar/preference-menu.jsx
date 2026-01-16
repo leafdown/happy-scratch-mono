@@ -61,8 +61,7 @@ const PreferenceMenu = ({
     submenuLabel,
     selectedItemKey,
     isRtl,
-    menuRef,
-    ariaLabel
+    menuRef
 }) => {
     const itemRefs = Object.keys(itemsMap).map(() => React.createRef());
 
@@ -87,7 +86,6 @@ const PreferenceMenu = ({
                 onClick={handleOnOpen}
                 ref={menuRef}
                 aria-expanded={isExpanded()}
-                aria-label={ariaLabel}
                 tabIndex={-1}
                 onKeyDown={handleKeyPress}
             >
@@ -121,7 +119,6 @@ const PreferenceMenu = ({
 };
 
 PreferenceMenu.propTypes = {
-    ariaLabel: PropTypes.string,
     menuRef: propTypes.ref.isRequired,
     itemsMap: PropTypes.objectOf(PropTypes.shape({
         icon: PropTypes.string,

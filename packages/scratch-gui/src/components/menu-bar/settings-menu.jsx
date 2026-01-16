@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React, {useRef, useMemo} from 'react';
-import {useIntl, FormattedMessage, defineMessages} from 'react-intl';
+import {useIntl, FormattedMessage, defineMessage} from 'react-intl';
 import {connect} from 'react-redux';
 import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
 
@@ -25,22 +25,10 @@ import settingsIcon from './icon--settings.svg';
 import themeIcon from '../../lib/assets/icon--theme.svg';
 import propTypes from '../../lib/prop-types.js';
 
-const ariaMessages = defineMessages({
-    settingsMenu: {
-        id: 'gui.aria.settingsMenu',
-        defaultMessage: 'Settings menu',
-        description: 'accessibility label for settings menu'
-    },
-    themeMenu: {
-        id: 'gui.aria.themeMenu',
-        defaultMessage: 'Theme menu',
-        description: 'accessibility label for theme menu'
-    },
-    colorMenu: {
-        id: 'gui.aria.colorMenu',
-        defaultMessage: 'Color menu',
-        description: 'accessibility label for color menu'
-    }
+const settingsMenuAriaMessage = defineMessage({
+    id: 'gui.aria.settingsMenu',
+    defaultMessage: 'Settings menu',
+    description: 'accessibility label for settings menu'
 });
 
 const enabledColorModes = [DEFAULT_MODE, HIGH_CONTRAST_MODE];
@@ -101,7 +89,7 @@ const SettingsMenu = ({
             [menuBarStyles.active]: isExpanded()
         })}
         aria-expanded={isExpanded()}
-        aria-label={intl.formatMessage(ariaMessages.settingsMenu)}
+        aria-label={intl.formatMessage(settingsMenuAriaMessage)}
         onClick={handleOnOpen}
         onKeyDown={handleKeyPress}
         ref={menuRef}
@@ -130,7 +118,6 @@ const SettingsMenu = ({
                     // TODO: Consider always showing the theme menu, even if there is a single available theme
                     availableThemesLength > 1 &&
                     <PreferenceMenu
-                        ariaLabel={intl.formatMessage(ariaMessages.themeMenu)}
                         menuRef={themeRef}
                         depth={2}
                         itemsMap={availableThemesMap}
@@ -145,7 +132,6 @@ const SettingsMenu = ({
                         isRtl={isRtl}
                     />}
                 {canChangeColorMode && <PreferenceMenu
-                    ariaLabel={intl.formatMessage(ariaMessages.colorMenu)}
                     menuRef={colorRef}
                     depth={2}
                     itemsMap={enabledColorModesMap}
