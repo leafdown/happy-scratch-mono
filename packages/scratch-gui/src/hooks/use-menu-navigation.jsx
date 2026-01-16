@@ -107,7 +107,16 @@ export default function useMenuNavigation ({
             e.preventDefault();
             handleOnClose();
         }
-    }, [handleMove, handleOnClose]);
+
+        if (e.key === KEY.ENTER) {
+            e.preventDefault();
+            e.stopPropagation();
+            const focusedRef = itemRefs[focusedIndex];
+            if (focusedRef?.current) {
+                focusedRef.current.click();
+            }
+        }
+    }, [handleMove, handleOnClose, itemRefs, focusedIndex]);
 
     const handleKeyPress = useCallback(e => {
         if (isExpanded() && depth === 1 && e.key === KEY.TAB) {
@@ -117,7 +126,8 @@ export default function useMenuNavigation ({
 
         if (menuContext.isInnermostMenu(menuRef)) {
             handleKeyPressOpenMenu(e);
-        } else if (!isExpanded() && (e.key === KEY.SPACE || (e.key === KEY.ARROW_RIGHT && depth !== 1))) {
+        } else if (!isExpanded() && (e.key === KEY.SPACE ||
+            (e.key === KEY.ARROW_RIGHT && depth !== 1))) {
             e.preventDefault();
             handleOnOpen();
         }

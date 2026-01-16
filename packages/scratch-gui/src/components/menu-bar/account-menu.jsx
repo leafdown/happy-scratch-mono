@@ -1,4 +1,5 @@
-import styles from './menu-bar.css';
+import styles from './account-menu.css';
+import stylesMenuBar from './menu-bar.css';
 import classNames from 'classnames';
 import React, {useMemo, useRef} from 'react';
 import useMenuNavigation from '../../hooks/use-menu-navigation';
@@ -74,9 +75,9 @@ const AccountMenu = ({
             <button
                 className={classNames(
                     styles.userInfo,
-                    styles.menuBarItem,
-                    styles.hoverable,
-                    {[styles.active]: isExpanded()}
+                    stylesMenuBar.menuBarItem,
+                    stylesMenuBar.hoverable,
+                    {[stylesMenuBar.active]: isExpanded()}
                 )}
                 onClick={handleOnOpen}
                 onKeyDown={handleKeyPress}
@@ -97,13 +98,13 @@ const AccountMenu = ({
                 </span>
                 <div className={styles.dropdownCaretPosition}>
                     <img
-                        className={styles.dropdownCaretIcon}
+                        className={stylesMenuBar.dropdownCaretIcon}
                         src={dropdownCaret}
                     />
                 </div>
             </button>
             <MenuBarMenu
-                className={classNames(styles.menuBarMenu)}
+                className={classNames(stylesMenuBar.menuBarMenu)}
                 open={isExpanded()}
                 // note: the Rtl styles are switched here, because this menu is justified
                 // opposite all the others

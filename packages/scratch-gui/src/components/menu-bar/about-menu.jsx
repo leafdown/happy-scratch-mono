@@ -1,4 +1,4 @@
-import React, {useRef} from 'react';
+import React, {useCallback, useMemo} from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {useIntl, defineMessage} from 'react-intl';
@@ -40,9 +40,21 @@ const AboutMenu = ({
     onClick,
     isRtl
 }) => {
-    const intl = useIntl();
+    if (!onClick) {
+        // hide the button
+        return null;
+    }
+    if (typeof onClick === 'function') {
+        // make a button which calls a function
+        return <AboutButton onClick={onClick} />;
+    }
 
-    const itemRefs = onClick.map(() => useRef(null));
+    // assume it's an array of objects
+    // each item must have a 'title' FormattedMessage and a 'handleClick' function
+    // generate a menu with items for each object in the array
+
+    const intl = useIntl();
+    const itemRefs = useMemo(() => onClick.map(() => React.createRef(null)), [onClick]);
 
     const {
         isExpanded,
@@ -56,24 +68,14 @@ const AboutMenu = ({
         depth: 1
     });
 
-    const wrapAboutMenuCallback = function (callback) {
-        return function () {
+    const wrapAboutMenuCallback = useCallback(
+        callback => () => {
             callback();
             handleOnClose();
-        };
-    };
+        },
+        [handleOnClose]
+    );
 
-    if (!onClick) {
-        // hide the button
-        return null;
-    }
-    if (typeof onClick === 'function') {
-        // make a button which calls a function
-        return <AboutButton onClick={onClick} />;
-    }
-    // assume it's an array of objects
-    // each item must have a 'title' FormattedMessage and a 'handleClick' function
-    // generate a menu with items for each object in the array
     return (
         <button
             className={classNames(styles.menuBarItem, styles.hoverable, {

@@ -94,7 +94,7 @@ const ariaMessages = defineMessages({
 
 const getScratchLogo = platform => (platform === PLATFORM.ANDROID ? scratchLogoAndroid : scratchLogo);
 
-export const MenuBarItemTooltip = ({
+const MenuBarItemTooltip = ({
     children,
     className,
     enable,
