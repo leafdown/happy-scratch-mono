@@ -244,11 +244,6 @@ class MenuBar extends React.Component {
         };
     }
     handleKeyPress (event) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            event.target.click();
-        }
-
         const modifier = bowser.mac ? event.metaKey : event.ctrlKey;
         if (modifier && event.key === 's') {
             this.props.onClickSave();
