@@ -54,7 +54,7 @@ export const MenuRefProvider = ({children}) => {
             return [...next, ref];
         });
     }, []);
-     
+    
     const closeInnerMenu = useCallback(() => {
         setRefStack(prev => prev.slice(0, prev.length - 1));
     }, []);

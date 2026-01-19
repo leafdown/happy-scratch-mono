@@ -180,7 +180,7 @@ FileMenu.propTypes = {
     onClickRemix: PropTypes.func,
     onClickNew: PropTypes.func.isRequired,
     getSaveToComputerHandler: PropTypes.func.isRequired,
-    remixMessage: PropTypes.node.isRequired
+    remixMessage: PropTypes.node
 };
 
 const mapStateToProps = state => ({

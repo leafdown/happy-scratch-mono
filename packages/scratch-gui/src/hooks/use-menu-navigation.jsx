@@ -75,7 +75,6 @@ export default function useMenuNavigation ({
                 }
                 continue;
             }
-            
             if (element.matches(MENU_ITEM_WRAPPER_SELECTOR)) {
                 const wrappedItems = Array.from(element.children).filter(child =>
                     child.matches(MENU_ITEM_SELECTOR)
