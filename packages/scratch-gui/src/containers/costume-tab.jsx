@@ -37,6 +37,7 @@ import searchIcon from '../components/action-menu/icon--search.svg';
 
 import costumeLibraryContent from '../lib/libraries/costumes.json';
 import backdropLibraryContent from '../lib/libraries/backdrops.json';
+import {ModalFocusContext} from '../contexts/modal-focus-context.jsx';
 
 let messages = defineMessages({
     addLibraryBackdropMsg: {
@@ -132,6 +133,8 @@ class CostumeTab extends React.Component {
             this.setState({selectedCostumeIndex: target.currentCostume});
         }
     }
+    static contextType = ModalFocusContext;
+
     handleSelectCostume (costumeIndex) {
         this.props.vm.editingTarget.setCostume(costumeIndex);
         this.setState({selectedCostumeIndex: costumeIndex});
@@ -166,6 +169,7 @@ class CostumeTab extends React.Component {
     }
     handleNewBackdropClick (e) {
         e.preventDefault();
+        this.context.captureFocus();
         this.props.onNewLibraryBackdropClick(jsonStr => {
             const costume = JSON.parse(jsonStr);
             this.handleNewCostume(costume, true);
@@ -173,6 +177,7 @@ class CostumeTab extends React.Component {
     }
     handleNewCostumeClick (e) {
         e.preventDefault();
+        this.context.captureFocus();
         this.props.onNewLibraryCostumeClick(jsonStr => {
             const costume = JSON.parse(jsonStr);
             this.handleNewCostume(costume, true);

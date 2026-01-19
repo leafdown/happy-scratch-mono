@@ -23,6 +23,7 @@ import StageSelectorComponent from '../components/stage-selector/stage-selector.
 
 import backdropLibraryContent from '../lib/libraries/backdrops.json';
 import {handleFileUpload, costumeUpload} from '../lib/file-uploader.js';
+import {ModalFocusContext} from '../contexts/modal-focus-context.jsx';
 
 const dragTypes = [
     DragConstants.COSTUME,
@@ -62,6 +63,9 @@ class StageSelector extends React.Component {
     componentWillUnmount () {
         document.removeEventListener('touchend', this.handleTouchEnd);
     }
+
+    static contextType = ModalFocusContext;
+
     handleTouchEnd (e) {
         const {x, y} = getEventXY(e);
         const {top, left, bottom, right} = this.ref.getBoundingClientRect();
@@ -85,6 +89,7 @@ class StageSelector extends React.Component {
     }
     handleNewBackdropClick (e) {
         e.stopPropagation();
+        this.context.captureFocus();
         this.props.onNewBackdropClick(jsonStr => {
             this.handleNewBackdrop(JSON.parse(jsonStr), false);
         });

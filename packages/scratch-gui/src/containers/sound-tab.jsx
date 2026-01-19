@@ -39,6 +39,7 @@ import {
 
 import {setRestore} from '../reducers/restore-deletion';
 import {showStandardAlert, closeAlertWithId} from '../reducers/alerts';
+import {ModalFocusContext} from '../contexts/modal-focus-context.jsx';
 
 class SoundTab extends React.Component {
     constructor (props) {
@@ -52,6 +53,7 @@ class SoundTab extends React.Component {
             'handleSurpriseSound',
             'handleFileUploadClick',
             'handleSoundUpload',
+            'handleNewSoundFromLibraryClick',
             'handleDrop',
             'setFileInput'
         ]);
@@ -77,6 +79,8 @@ class SoundTab extends React.Component {
             this.setState({selectedSoundIndex: Math.max(target.sounds.length - 1, 0)});
         }
     }
+
+    static contextType = ModalFocusContext;
 
     handleSelectSound (soundIndex) {
         this.setState({selectedSoundIndex: soundIndex});
@@ -127,6 +131,11 @@ class SoundTab extends React.Component {
 
     handleFileUploadClick () {
         this.fileInput.click();
+    }
+
+    handleNewSoundFromLibraryClick (e) {
+        this.context.captureFocus();
+        this.props.onNewSoundFromLibraryClick(e);
     }
 
     handleSoundUpload (e) {
@@ -229,7 +238,7 @@ class SoundTab extends React.Component {
                 buttons={[{
                     title: intl.formatMessage(messages.addSound),
                     img: addSoundFromLibraryIcon,
-                    onClick: onNewSoundFromLibraryClick
+                    onClick: this.handleNewSoundFromLibraryClick
                 }, {
                     title: intl.formatMessage(messages.fileUploadSound),
                     img: fileUploadIcon,
@@ -249,7 +258,7 @@ class SoundTab extends React.Component {
                 }, {
                     title: intl.formatMessage(messages.addSound),
                     img: searchIcon,
-                    onClick: onNewSoundFromLibraryClick
+                    onClick: this.handleNewSoundFromLibraryClick
                 }]}
                 dragType={DragConstants.SOUND}
                 isRtl={isRtl}

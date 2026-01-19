@@ -39,6 +39,10 @@ $fade-out-distance: 15px;
     --radiate-color: 133, 92, 214; /* $looks-secondary */
 }
 
+.extension-button:focus-visible {
+    outline: revert;
+}
+
 .extension-button-icon {
     width: 1.75rem;
     height: 1.75rem;

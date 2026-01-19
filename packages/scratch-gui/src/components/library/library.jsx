@@ -19,6 +19,7 @@ import {CATEGORIES} from '../../../src/lib/libraries/decks/index.jsx';
 import {getLocalStorageValue, setLocalStorageValue} from '../../lib/local-storage.js';
 
 import styles from './library.css';
+import {ModalFocusContext} from '../../contexts/modal-focus-context.jsx';
 
 const localStorageAvailable =
     'localStorage' in window && window.localStorage !== null;
@@ -177,9 +178,18 @@ class LibraryComponent extends React.Component {
 
         // We need to create the driver when the content is loaded for the target element to exist
         if (!prevState.loaded && this.state.loaded && this.state.shouldShowFaceSensingCallout) {
-            const onFirstClick = () => {
+            const onFirstInteraction = e => {
+                // Make sure to clean up event listeners after first interaction
+                window.removeEventListener('click', onFirstInteraction);
+                window.removeEventListener('keydown', onFirstInteraction);
+
                 const isExtensionItemVisible = document.getElementById('faceSensing');
                 if (!isExtensionItemVisible) return;
+
+                if (e.type === 'keydown') {
+                    // Prevent focus from jumping to the next element in the tab order after keydown finishes
+                    e.preventDefault();
+                }
 
                 const tooltip = driver({
                     allowClose: false,
@@ -187,7 +197,7 @@ class LibraryComponent extends React.Component {
                     overlayColor: 'transparent',
                     popoverOffset: -2,
                     steps: [{
-                        element: 'div[id="faceSensing"]',
+                        element: 'button[id="faceSensing"]',
                         popover: {
                             description: this.props.intl.formatMessage(messages.faceSensingModalCallout),
                             side: 'left',
@@ -202,7 +212,9 @@ class LibraryComponent extends React.Component {
                 tooltip.drive();
             };
 
-            window.addEventListener('click', onFirstClick, {once: true});
+            window.addEventListener('click', onFirstInteraction, {once: true});
+            window.addEventListener('keydown', onFirstInteraction, {once: true});
+            
             this.filteredDataRef.addEventListener('scroll', this.handleScroll);
         }
     }
@@ -218,6 +230,9 @@ class LibraryComponent extends React.Component {
 
         this.filteredDataRef.removeEventListener('scroll', this.handleScroll);
     }
+
+    static contextType = ModalFocusContext;
+
     handleScroll () {
         if (this.animationFrameId) return;
 
@@ -248,6 +263,7 @@ class LibraryComponent extends React.Component {
     }
     handleClose () {
         this.props.onRequestClose();
+        this.context.restoreFocus();
     }
     handleTagClick (tag) {
         if (this.state.playingItem === null) {

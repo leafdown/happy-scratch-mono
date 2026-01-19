@@ -24,6 +24,7 @@ import {highlightTarget} from '../reducers/targets';
 import {fetchSprite, fetchCode} from '../lib/backpack-api';
 import randomizeSpritePosition from '../lib/randomize-sprite-position';
 import downloadBlob from '../lib/download-blob';
+import {ModalFocusContext} from '../contexts/modal-focus-context.jsx';
 
 class TargetPane extends React.Component {
     constructor (props) {
@@ -58,6 +59,9 @@ class TargetPane extends React.Component {
     componentWillUnmount () {
         this.props.vm.removeListener('BLOCK_DRAG_END', this.handleBlockDragEnd);
     }
+
+    static contextType = ModalFocusContext;
+
     handleChangeSpriteDirection (direction) {
         this.props.vm.postSpriteInfo({direction});
     }
@@ -134,6 +138,7 @@ class TargetPane extends React.Component {
     }
     handleNewSpriteClick (e) {
         e.preventDefault();
+        this.context.captureFocus();
         this.props.onNewSpriteClick(this.handleNewSprite);
     }
     handleNewSprite (spriteJSONString) {

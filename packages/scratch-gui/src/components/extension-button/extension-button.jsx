@@ -1,4 +1,4 @@
-import React, {useEffect, useCallback, useState, useRef} from 'react';
+import React, {useEffect, useCallback, useState, useRef, useContext} from 'react';
 import classNames from 'classnames';
 // eslint-disable-next-line import/no-unresolved
 import {driver} from 'driver.js';
@@ -13,6 +13,7 @@ import {getLocalStorageValue, setLocalStorageValue} from '../../lib/local-storag
 import addExtensionIcon from '../gui/icon--extensions.svg';
 import styles from './extension-button.css';
 import './extension-button.raw.css';
+import {ModalFocusContext} from '../../contexts/modal-focus-context.jsx';
 
 const messages = defineMessages({
     addExtension: {
@@ -62,6 +63,8 @@ const ExtensionButton = props => {
     } = props;
 
     const driverRef = useRef(null);
+    const {captureFocus} = useContext(ModalFocusContext);
+
     // Keep in a state to avoid reads from localStorage on every render.
     const [shouldShowFaceSensingCallouts, setShouldShowFaceSensingCallouts] =
         useState(showNewFeatureCallouts && !hasIntroducedFaceSensing(username) && !hasUsedFaceSensing(username));
@@ -70,9 +73,18 @@ const ExtensionButton = props => {
     useEffect(() => {
         if (!shouldShowFaceSensingCallouts) return;
 
-        const onFirstClick = () => {
+        const onFirstInteraction = e => {
+            // Make sure to clean up event listeners after first interaction
+            window.removeEventListener('click', onFirstInteraction);
+            window.removeEventListener('keydown', onFirstInteraction);
+
             const isExtensionButtonVisible = document.querySelector('div[class*="extension-button-container"]');
             if (!isExtensionButtonVisible) return;
+
+            if (e.type === 'keydown') {
+                // Prevent focus from jumping to the next element in the tab order after keydown finishes
+                e.preventDefault();
+            }
 
             const tooltip = driver({
                 allowClose: false,
@@ -95,7 +107,9 @@ const ExtensionButton = props => {
             driverRef.current = tooltip;
             tooltip.drive();
         };
-        window.addEventListener('click', onFirstClick, {once: true});
+
+        window.addEventListener('click', onFirstInteraction, {once: true});
+        window.addEventListener('keydown', onFirstInteraction, {once: true});
 
         return () => {
             if (driverRef.current) {
@@ -135,12 +149,13 @@ const ExtensionButton = props => {
             setHasIntroducedFaceSensing(username);
             setShouldShowFaceSensingCallouts(false);
         }
+
+        captureFocus();
         onExtensionButtonClick?.();
-    }, [shouldShowFaceSensingCallouts]);
+    }, [shouldShowFaceSensingCallouts, captureFocus, onExtensionButtonClick]);
 
     return (
         <Box className={styles.extensionButtonContainer}>
-            {/* TODO: Add focus indicator */}
             <button
                 className={
                     classNames(styles.extensionButton,
@@ -148,6 +163,7 @@ const ExtensionButton = props => {
                     )}
                 title={intl.formatMessage(messages.addExtension)}
                 onClick={handleExtensionButtonClick}
+                aria-label={intl.formatMessage(messages.addExtension)}
             >
                 <img
                     className={styles.extensionButtonIcon}
