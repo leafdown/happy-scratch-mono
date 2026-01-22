@@ -2,6 +2,9 @@ import {useCallback, useContext, useState, useRef} from 'react';
 import {MenuRefContext} from '../contexts/menu-ref-context';
 import {KEY} from '../lib/navigation-keys';
 
+// TODO: consider refactoring all menus to follow the structure
+// of having the submenu nested inside the button
+
 // for all items of menu, to be found via the custom algorithm
 const MENU_ITEM_SELECTOR = '[data-menu-item="true"]';
 // wrapper prop should only be used for wrappers of an expandable menu,
@@ -53,10 +56,10 @@ export default function useMenuNavigation ({
 }) {
     const menuRef = useRef(null);
     const menuContext = useContext(MenuRefContext);
-    const [focusedIndex, setFocusedIndex] = useState(-1);
+    const [focusedItem, setFocusedItem] = useState(null);
 
     // BFS to find first children with attribute
-    const findDirectSubitems = () => {
+    const findDirectSubitems = useCallback(() => {
         if (!menuRef?.current) return [];
         const directSubitems = [];
         const root = menuRef.current;
@@ -86,20 +89,29 @@ export default function useMenuNavigation ({
         }
 
         return directSubitems;
-    };
+    }, [menuRef]);
+
+    const findDirectSubitemsFocusable = useCallback(
+        () => findDirectSubitems().map(([wrapper]) => wrapper),
+        [findDirectSubitems]
+    );
+
+    const findDirectSubitemsClickable = useCallback(
+        () => findDirectSubitems().map(([_, child]) => child),
+        [findDirectSubitems]
+    );
 
     const isExpanded = useCallback(
         () => menuContext.isOpenMenu(menuRef),
         [menuContext, menuRef]
     );
 
-    const refocusIndex = useCallback(index => {
-        const items = findDirectSubitems(menuRef);
-        if (items?.[index]) {
-            items[index][0].focus();
-            setFocusedIndex(index);
+    const focusItem = useCallback(item => {
+        if (item) {
+            item.focus();
+            setFocusedItem(item);
         }
-    }, [menuRef]);
+    }, []);
 
     const handleOnOpen = useCallback(() => {
         if (menuContext.isOpenMenu(menuRef)) return;
@@ -108,28 +120,28 @@ export default function useMenuNavigation ({
 
         // Wait for the UI to be rendered before interacting with the DOM
         requestAnimationFrame(() => {
-            refocusIndex(defaultIndexOnOpen);
+            const focusableItems = findDirectSubitemsFocusable();
+            focusItem(focusableItems[defaultIndexOnOpen] || focusableItems[0]);
         });
     }, [menuContext, menuRef, depth, defaultIndexOnOpen]);
 
     const handleOnClose = useCallback(() => {
-        setFocusedIndex(-1);
+        setFocusedItem(null);
         menuContext.closeMenuByRef(menuRef);
         menuRef?.current?.focus();
     }, [menuContext, menuRef]);
 
     const handleMove = useCallback(direction => {
-        const items = findDirectSubitems(menuRef);
-        if (!items?.length) return;
+        const items = findDirectSubitemsFocusable();
+        if (!items.length) return;
 
-        const nextIndex = (focusedIndex + direction + items.length) % items.length;
-        refocusIndex(nextIndex);
-    }, [focusedIndex, menuRef, refocusIndex]);
+        const currentIndex = items.indexOf(focusedItem);
+        const nextIndex = (currentIndex + direction + items.length) % items.length;
+        focusItem(items[nextIndex]);
+    }, [focusedItem, menuRef, focusItem]);
 
     const handleKeyDownOpenMenu = useCallback(e => {
-        const items = findDirectSubitems(menuRef);
-
-        // Logic for vertical menus, will need to change when implementing for vertical
+        // Logic for vertical menus, will need to change when implementing for horizontal
         switch (e.key) {
         case KEY.ARROW_DOWN:
             e.preventDefault();
@@ -147,14 +159,17 @@ export default function useMenuNavigation ({
         case KEY.ENTER:
             e.preventDefault();
             e.stopPropagation();
-            // TODO: update how to recognize item to be clicked from parent
-            if (items[focusedIndex]?.[0] === items[focusedIndex]?.[1]) {
-                items[focusedIndex]?.[1].click();
+            {
+                const focusableItems = findDirectSubitemsFocusable();
+                const clickableItems = findDirectSubitemsClickable();
+
+                const index = focusableItems.indexOf(focusedItem);
+                clickableItems[index].click();
+                break;
             }
-            break;
         }
 
-    }, [handleMove, handleOnClose, focusedIndex]);
+    }, [handleMove, handleOnClose]);
 
     const handleKeyDown = useCallback(e => {
         if (isExpanded() && e.key === KEY.TAB) {
@@ -182,7 +197,7 @@ export default function useMenuNavigation ({
 
     return {
         menuRef,
-        focusedIndex,
+        focusedItem,
         isExpanded,
         handleKeyDown,
         handleKeyDownOpenMenu,
