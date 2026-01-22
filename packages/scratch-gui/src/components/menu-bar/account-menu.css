@@ -2,8 +2,15 @@
 @import "../../css/units.css";
 
 .account-menu {
-    /* to keep styling as it was with React.Fragment instead of div */
-    display: contents; 
+    /* to keep styling as it was with React.Fragment instead of button, which alters the following: */
+    background: none;
+    border: none;
+
+    font: inherit;
+    text-align: inherit;
+    cursor: pointer;
+
+    padding: 0;
 }
 
 .user-info {

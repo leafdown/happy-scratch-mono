@@ -4,12 +4,11 @@ import React from 'react';
 
 import styles from './menu.css';
 
-const MenuComponent = ({
+const MenuComponent = React.forwardRef(({
     className = '',
     children,
-    componentRef,
     place = 'right'
-}) => (
+}, ref) => (
     <ul
         className={classNames(
             styles.menu,
@@ -19,16 +18,17 @@ const MenuComponent = ({
                 [styles.right]: place === 'right'
             }
         )}
-        ref={componentRef}
+        ref={ref}
     >
         {children}
     </ul>
-);
+));
+
+MenuComponent.displayName = 'MenuComponent';
 
 MenuComponent.propTypes = {
     children: PropTypes.node,
     className: PropTypes.string,
-    componentRef: PropTypes.func,
     place: PropTypes.oneOf(['left', 'right'])
 };
 
@@ -58,10 +58,10 @@ Submenu.propTypes = {
     place: PropTypes.oneOf(['left', 'right'])
 };
 
-const MenuItem = ({
+const MenuItem = React.forwardRef(({
     children,
     className,
-    expanded = false,
+    isExpanded = false,
     isSelected = false,
     isDisabled = false,
     isDataMenuItem = false,
@@ -69,14 +69,16 @@ const MenuItem = ({
     onClick,
     ariaLabel,
     ariaRole,
-    onParentKeyDown
-}) => (
+    onParentKeyDown,
+    ...props
+}, ref) => (
     <li
+        ref={ref}
         className={classNames(
             styles.menuItem,
             styles.hoverable,
             className,
-            {[styles.expanded]: expanded}
+            {[styles.expanded]: isExpanded}
         )}
         onClick={onClick}
         tabIndex={-1}
@@ -87,17 +89,20 @@ const MenuItem = ({
         onKeyDown={onParentKeyDown}
         data-menu-item={isDataMenuItem}
         data-menu-item-wrapper={isDataMenuItemWrapper}
+        {...props}
     >
         {children}
     </li>
-);
+));
+
+MenuItem.displayName = 'MenuItem';
 
 MenuItem.propTypes = {
     ariaLabel: PropTypes.string,
     ariaRole: PropTypes.string,
     children: PropTypes.node,
     className: PropTypes.string,
-    expanded: PropTypes.bool,
+    isExpanded: PropTypes.bool,
     isSelected: PropTypes.bool,
     isDisabled: PropTypes.bool,
     isDataMenuItem: PropTypes.bool,

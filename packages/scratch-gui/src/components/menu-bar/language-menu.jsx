@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import React, {useCallback, useEffect, useRef} from 'react';
+import React, {useCallback, useRef} from 'react';
 import {useIntl, FormattedMessage, defineMessage} from 'react-intl';
 import {connect} from 'react-redux';
 import locales from 'scratch-l10n';
@@ -54,18 +54,16 @@ const LanguageMenu = ({
 
     return (
         <MenuItem
-            expanded={isExpanded()}
+            ref={menuRef}
             isDataMenuItemWrapper
+            isExpanded={isExpanded()}
+            ariaLabel={intl.formatMessage(languageMenu)}
+            onKeyDown={handleKeyDown}
         >
             <button
                 className={styles.option}
                 onClick={handleOnOpen}
                 onMouseOver={handleMouseOver}
-                ref={menuRef}
-                aria-label={intl.formatMessage(languageMenu)}
-                aria-expanded={isExpanded()}
-                tabIndex={-1}
-                onKeyDown={handleKeyDown}
                 data-menu-item
             >
                 <img

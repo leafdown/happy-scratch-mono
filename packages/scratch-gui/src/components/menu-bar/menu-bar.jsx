@@ -317,11 +317,12 @@ class MenuBar extends React.Component {
             >
                 <div className={styles.mainMenu}>
                     <div className={styles.fileGroup}>
-                        <div className={classNames(styles.menuBarItem)}>
+                        <button
+                            aria-label={this.props.intl.formatMessage(ariaMessages.home)}
+                            className={classNames(styles.menuBarItem)}
+                            onClick={this.props.onClickLogo}
+                        >
                             <img
-                                role="button"
-                                aria-label={this.props.intl.formatMessage(ariaMessages.home)}
-                                tabIndex={0}
                                 id="logo_img"
                                 alt="Scratch"
                                 className={classNames(styles.scratchLogo, {
@@ -329,9 +330,8 @@ class MenuBar extends React.Component {
                                 })}
                                 draggable={false}
                                 src={getScratchLogo(this.props.platform)}
-                                onClick={this.props.onClickLogo}
                             />
-                        </div>
+                        </button>
                         {(this.props.canChangeColorMode || this.props.canChangeLanguage || this.props.canChangeTheme) &&
                         (<SettingsMenu
                             canChangeLanguage={this.props.canChangeLanguage}

@@ -78,6 +78,8 @@ const SettingsMenu = ({
         onClick={handleOnOpen}
         onKeyDown={handleKeyDown}
         ref={menuRef}
+        data-menu-item
+        data-menu-item-wrapper
     >
         <img src={settingsIcon} />
         <span className={styles.dropdownLabel}>

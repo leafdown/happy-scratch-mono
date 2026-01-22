@@ -12,27 +12,26 @@ const MENU_ITEM_WRAPPER_SELECTOR = '[data-menu-item-wrapper="true"]';
  * Custom hook for keyboard navigation and focus management in menu components.
  *
  * This hook provides:
- * - Opening and closing menus
- * - Handling Escape, Enter, Arrow and Tab keys
+ * - Opening and closing menus, remembering state
+ * - Handling Escape, Enter, Space, Arrow and Tab keys
  * - Coordinating nested open menus via MenuRefContext
  * - Automatically focusing the first or default menu item on open
  *
  * STEPS TO USE IT:
  * 1. In the top-level menu trigger (button/div/...) pass:
- *    - onClick={handleOnOpen}
- *    - ref={menuRef}
- *    - onKeyDown={handleKeyDown}
- *    - tabIndex={0} or {-1} depending on the kind of focusability we want
- *    - aria-expanded={isExpanded()}
- * 2. Data-menu-item and data-menu-item-wrapper
- * When used inside a given menu component, this hook considers its focusable menu items to be
- * all of its (possibly nested) descendants, which match the following criteria:
- * - are selectable by either `MENU_ITEM_SELECTOR` or `MENU_ITEM_WRAPPER_SELECTOR`,
- * - are themselves not nested inside another menu item wrapper.
- * 3. If an expandable submenu is wrapped and button does not contain the submenu items as children,
- * mark the wrapper with:
- *    - data-menu-item-wrapper
- *    - see SettingsMenu -> LanguageMenu | PreferenceMenu logic for reference
+ * - onClick={handleOnOpen}
+ * - ref={menuRef}
+ * - onKeyDown={handleKeyDown}
+ * - tabIndex={0} or {-1} depending on the kind of focusability we want
+ * - aria-expanded={isExpanded()} (and use it wherever else needed)
+ * - for menu items pass onKeyDown={handleKeyDownOpenMenu}
+ * 2. For the sake of consistent code structure, it is recommended for the core menus (depth 1)
+ * to nest the submenu as a child of the button.
+ * 3. Data-menu-item and data-menu-item-wrapper
+ * - For nested submenus, you could use either a standalone button with menu items as children
+ * and give it data-menu-item(=true) prop or
+ * - Give data-menu-item-wrapper to the wrapper and data-menu-item to the button directly inside it.
+ * See SettingsMenu -> LanguageMenu | PreferenceMenu logic for reference
  * @param {object} params
  *   Parameters object
  * @param {number} params.depth
@@ -60,9 +59,7 @@ export default function useMenuNavigation ({
     const findDirectSubitems = () => {
         if (!menuRef?.current) return [];
         const directSubitems = [];
-        // Start from the wrapper if element is inside one
-        const root = menuRef.current?.parentElement?.matches(MENU_ITEM_WRAPPER_SELECTOR) ?
-            menuRef.current.parentElement : menuRef.current;
+        const root = menuRef.current;
         const children = [...root.children];
 
         while (children.length > 0) {
@@ -70,8 +67,9 @@ export default function useMenuNavigation ({
             const element = children.shift();
             if (element.matches(MENU_ITEM_SELECTOR)) {
                 // Skip original starting element if we went back to the wrapper
-                if (element !== menuRef.current) {
-                    directSubitems.push(element);
+                if (!(menuRef.current.matches(MENU_ITEM_WRAPPER_SELECTOR) &&
+                    Array.from(menuRef.current.children).includes(element))) {
+                    directSubitems.push([element, element]);
                 }
                 continue;
             }
@@ -79,7 +77,9 @@ export default function useMenuNavigation ({
                 const wrappedItems = Array.from(element.children).filter(child =>
                     child.matches(MENU_ITEM_SELECTOR)
                 );
-                directSubitems.push(...wrappedItems);
+                wrappedItems.forEach(child => {
+                    directSubitems.push([element, child]);
+                });
             } else {
                 children.push(...element.children);
             }
@@ -96,7 +96,7 @@ export default function useMenuNavigation ({
     const refocusIndex = useCallback(index => {
         const items = findDirectSubitems(menuRef);
         if (items?.[index]) {
-            items[index].focus();
+            items[index][0].focus();
             setFocusedIndex(index);
         }
     }, [menuRef]);
@@ -126,21 +126,8 @@ export default function useMenuNavigation ({
         refocusIndex(nextIndex);
     }, [focusedIndex, menuRef, refocusIndex]);
 
-    const handleTab = useCallback(e => {
-        if (isExpanded() && e.key === KEY.TAB) {
-            handleOnClose();
-            menuContext.closeAllMenus();
-            return;
-        }
-    }, [isExpanded, handleOnClose, menuContext]);
-
     const handleKeyDownOpenMenu = useCallback(e => {
         const items = findDirectSubitems(menuRef);
-
-        // copies logic from handleKeyDown in case the opening clickable
-        // component doesn't contain its subitems as children
-        // it is a little bit hacky, some of the logic here could be refactored a little bit
-        handleTab(e);
 
         // Logic for vertical menus, will need to change when implementing for vertical
         switch (e.key) {
@@ -160,18 +147,25 @@ export default function useMenuNavigation ({
         case KEY.ENTER:
             e.preventDefault();
             e.stopPropagation();
-            items[focusedIndex]?.click();
+            // TODO: update how to recognize item to be clicked from parent
+            if (items[focusedIndex]?.[0] === items[focusedIndex]?.[1]) {
+                items[focusedIndex]?.[1].click();
+            }
             break;
         }
 
     }, [handleMove, handleOnClose, focusedIndex]);
 
     const handleKeyDown = useCallback(e => {
-        handleTab(e);
+        if (isExpanded() && e.key === KEY.TAB) {
+            handleOnClose();
+            menuContext.closeAllMenus();
+            return;
+        }
 
         if (menuContext.isInnermostMenu(menuRef)) {
             handleKeyDownOpenMenu(e);
-        } else if (!isExpanded() && (e.key === KEY.SPACE ||
+        } else if (!isExpanded() && (e.key === KEY.ENTER || e.key === KEY.SPACE ||
             (e.key === KEY.ARROW_RIGHT && depth !== 1))) {
             e.preventDefault();
             handleOnOpen();

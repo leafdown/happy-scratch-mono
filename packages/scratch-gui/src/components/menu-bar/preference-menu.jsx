@@ -75,16 +75,14 @@ const PreferenceMenu = ({
 
     return (
         <MenuItem
-            expanded={isExpanded()}
+            isExpanded={isExpanded()}
             isDataMenuItemWrapper
+            ref={menuRef}
+            onKeyDown={handleKeyDown}
         >
             <button
                 className={styles.option}
                 onClick={handleOnOpen}
-                ref={menuRef}
-                aria-expanded={isExpanded()}
-                tabIndex={-1}
-                onKeyDown={handleKeyDown}
                 data-menu-item
             >
                 <img
