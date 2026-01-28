@@ -63,7 +63,8 @@ const AboutMenu = ({
         handleKeyDown,
         handleKeyDownOpenMenu
     } = useMenuNavigation({
-        depth
+        depth,
+        isRtl
     });
 
     const wrapAboutMenuCallback = useCallback(

@@ -37,7 +37,8 @@ const ModeMenu = ({
         handleKeyDownOpenMenu,
         menuRef
     } = useMenuNavigation({
-        depth
+        depth,
+        isRtl
     });
 
     return (

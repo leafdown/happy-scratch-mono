@@ -50,7 +50,8 @@ const FileMenu = ({
         handleOnOpen,
         handleOnClose
     } = useMenuNavigation({
-        depth
+        depth,
+        isRtl
     });
 
     const saveNowMessage = (

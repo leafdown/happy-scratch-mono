@@ -35,7 +35,8 @@ const EditMenu = ({
         handleOnOpen,
         handleOnClose
     } = useMenuNavigation({
-        depth
+        depth,
+        isRtl
     });
 
     return (

@@ -67,7 +67,8 @@ const SettingsMenu = ({
         handleKeyDown,
         menuRef
     } = useMenuNavigation({
-        depth
+        depth,
+        isRtl
     });
 
     return (<button

@@ -40,7 +40,8 @@ const LanguageMenu = ({
         menuRef
     } = useMenuNavigation({
         depth,
-        defaultIndexOnOpen: (Object.keys(locales).indexOf(currentLocale))
+        defaultIndexOnOpen: (Object.keys(locales).indexOf(currentLocale)),
+        isRtl
     });
 
     const setRef = useCallback(component => {

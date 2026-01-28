@@ -1,4 +1,5 @@
 import {useCallback, useContext, useRef} from 'react';
+import {useSelector} from 'react-redux';
 import {MenuRefContext} from '../contexts/menu-ref-context';
 import {KEY} from '../lib/navigation-keys';
 
@@ -41,6 +42,8 @@ const MENU_ITEM_WRAPPER_SELECTOR = '[data-menu-item-wrapper="true"]';
  *   Nesting depth of the menu (1 = top-level menu).
  * @param {number} [params.defaultIndexOnOpen]
  *   Default menu item index to focus when opening the menu.
+ * @param {boolean} [params.isRtl]
+ *   Determines the direction of the arrow navigation
  * @returns {object} An object containing the menu state and keyboard handlers:
  *   - menuRef: reference to element to be used in component
  *   - focusedIndex: number — Index of the currently focused menu item.
@@ -52,10 +55,17 @@ const MENU_ITEM_WRAPPER_SELECTOR = '[data-menu-item-wrapper="true"]';
  */
 export default function useMenuNavigation ({
     depth = 1,
-    defaultIndexOnOpen = 0
+    defaultIndexOnOpen = 0,
+    isRtl: isRtlProp
 }) {
     const menuRef = useRef(null);
     const menuContext = useContext(MenuRefContext);
+
+    const isRtlFromStore = useSelector(state => state.locales.isRtl);
+    const isRtl = isRtlProp ?? isRtlFromStore;
+
+    const OPEN_KEY = isRtl ? KEY.ARROW_LEFT : KEY.ARROW_RIGHT;
+    const CLOSE_KEY = isRtl ? KEY.ARROW_RIGHT : KEY.ARROW_LEFT;
 
     // BFS to find first children with attribute
     const findDirectSubitems = useCallback(() => {
@@ -151,7 +161,7 @@ export default function useMenuNavigation ({
             handleMove(-1);
             break;
         case KEY.ESCAPE:
-        case KEY.ARROW_LEFT:
+        case CLOSE_KEY:
             e.preventDefault();
             e.stopPropagation();
             handleOnClose();
@@ -182,8 +192,13 @@ export default function useMenuNavigation ({
 
         if (menuContext.isInnermostMenu(menuRef)) {
             handleKeyDownOpenMenu(e);
-        } else if (!isExpanded() && (e.key === KEY.ENTER || e.key === KEY.SPACE ||
-            (e.key === KEY.ARROW_RIGHT && depth !== 1))) {
+        } else if (!isExpanded() &&
+            (
+                e.key === KEY.ENTER ||
+                e.key === KEY.SPACE ||
+                (e.key === OPEN_KEY && depth !== 1)
+            )
+        ) {
             e.preventDefault();
             handleOnOpen();
         }

@@ -49,7 +49,8 @@ const AccountMenu = ({
         handleKeyDownOpenMenu,
         menuRef
     } = useMenuNavigation({
-        depth
+        depth,
+        isRtl
     });
 
     return (
