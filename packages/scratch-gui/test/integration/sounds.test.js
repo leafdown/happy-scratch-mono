@@ -173,7 +173,7 @@ describe('Working with sounds', () => {
 
         await loadUri(uri);
         await clickText('Sounds');
-        const el = await findByXpath('//button[@aria-label="Choose a Sound"]');
+        const el = await findByText('Meow', scope.soundsTab);
         await el.sendKeys(Key.chord(cmdCtrl, 'a')); // Select all
         await findByText('0.85', scope.soundsTab); // Meow sound duration
         await el.sendKeys(Key.DELETE);
