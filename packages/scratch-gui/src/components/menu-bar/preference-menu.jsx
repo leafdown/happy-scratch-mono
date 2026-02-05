@@ -72,7 +72,7 @@ const PreferenceMenu = ({
         handleOnOpen,
         menuRef
     } = useMenuNavigation({
-        depth,
+        depth: depth ?? 1,
         isRtl
     });
 

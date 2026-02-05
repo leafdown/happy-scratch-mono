@@ -39,7 +39,7 @@ const LanguageMenu = ({
         handleOnOpen,
         menuRef
     } = useMenuNavigation({
-        depth,
+        depth: depth ?? 1,
         defaultIndexOnOpen: (Object.keys(locales).indexOf(currentLocale)),
         isRtl
     });
