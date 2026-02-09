@@ -2,7 +2,7 @@ import path from 'path';
 import SeleniumHelper from '../helpers/selenium-helper';
 import {Key} from 'selenium-webdriver';
 
-const SLEEP_TIME = 500;
+const SLEEP_TIME = 100;
 
 const {
     findByXpath,
@@ -21,6 +21,10 @@ const EDIT_MENU_XPATH = '//button[contains(@class, "menu-bar_menu-bar-item")]' +
 const SETTINGS_MENU_XPATH = '//button[contains(@class, "menu-bar_menu-bar-item")]' +
     '[*[contains(@class, "settings-menu_dropdown-label")]//*[text()="Settings"]]';
 
+/* Notes:
+    - Might need to change in case menus/submenus are moved around/reordered
+    - Added sleep time to ensure consistency between different keyboard events
+*/
 describe('Menu bar keyboard navigation', () => {
     beforeAll(() => {
         driver = getDriver();
@@ -35,58 +39,57 @@ describe('Menu bar keyboard navigation', () => {
         await loadUri(uri);
     });
 
-    test('Tab focuses file menu on 3 clicks', async () => {
-        await loadUri(uri);
-
-        // Pressing tab 3 times should focus the file menu button
-        await driver.actions().sendKeys(Key.TAB, Key.TAB, Key.TAB)
+    const clickKey = async key => {
+        await driver.actions().sendKeys(key)
             .perform();
+        await driver.sleep(SLEEP_TIME);
+    };
+
+    const clickKeys = async keys => {
+        for (const key of keys) {
+            await clickKey(key);
+        }
+    };
+
+    test('Tab focuses file menu on 3 clicks', async () => {
+        // Pressing tab 3 times should focus the file menu button
+        await clickKeys([Key.TAB, Key.TAB, Key.TAB]);
 
         const activeElement = await driver.switchTo().activeElement();
         expect(await activeElement.getAttribute('aria-label')).toBe('File menu');
     });
  
     test('Enter opens File menu', async () => {
-        await loadUri(uri);
         const fileMenuButton = await findByXpath(FILE_MENU_XPATH);
 
         expect(await fileMenuButton.getAttribute('aria-expanded')).toBe('false');
 
         // Explicit keyboard focus
         await driver.executeScript('arguments[0].focus()', fileMenuButton);
-        await driver.actions().sendKeys(Key.ENTER)
-            .perform();
+        await clickKey(Key.ENTER);
 
         expect(await fileMenuButton.getAttribute('aria-expanded')).toBe('true');
     });
 
     test('Space opens File menu', async () => {
-        await loadUri(uri);
         const fileMenuButton = await findByXpath(FILE_MENU_XPATH);
 
         expect(await fileMenuButton.getAttribute('aria-expanded')).toBe('false');
 
         // Explicit keyboard focus
         await driver.executeScript('arguments[0].focus()', fileMenuButton);
-        await driver.actions().sendKeys(Key.SPACE)
-            .perform();
+        await clickKey(Key.SPACE);
 
         expect(await fileMenuButton.getAttribute('aria-expanded')).toBe('true');
     });
 
-    test('ArrowUp moves focus to the last item', async () => {
-        await loadUri(uri);
-
+    test('ArrowUp moves focus to the last item in file menu', async () => {
         const fileMenuButton = await findByXpath(FILE_MENU_XPATH);
-        await fileMenuButton.click();
-        await driver.actions().sendKeys(Key.ENTER)
-            .perform();
-        await driver.sleep(SLEEP_TIME);
+        await driver.executeScript('arguments[0].focus()', fileMenuButton);
+        await clickKey(Key.ENTER);
 
         // ArrowUp should go to last item
-        await driver.actions().sendKeys(Key.ARROW_UP)
-            .perform();
-        await driver.sleep(SLEEP_TIME);
+        await clickKey(Key.ARROW_UP);
 
         const activeElement = await driver.switchTo().activeElement();
         const text = await activeElement.getText();
@@ -95,64 +98,50 @@ describe('Menu bar keyboard navigation', () => {
     });
  
     test('Enter opens Edit menu', async () => {
-        await loadUri(uri);
         const editMenuButton = await findByXpath(EDIT_MENU_XPATH);
 
         expect(await editMenuButton.getAttribute('aria-expanded')).toBe('false');
 
         // Explicit keyboard focus
         await driver.executeScript('arguments[0].focus()', editMenuButton);
-        await driver.actions().sendKeys(Key.ENTER)
-            .perform();
+        await clickKey(Key.ENTER);
 
         expect(await editMenuButton.getAttribute('aria-expanded')).toBe('true');
     });
 
     test('Space opens Edit menu', async () => {
-        await loadUri(uri);
         const editMenuButton = await findByXpath(EDIT_MENU_XPATH);
 
         expect(await editMenuButton.getAttribute('aria-expanded')).toBe('false');
 
         // Explicit keyboard focus
         await driver.executeScript('arguments[0].focus()', editMenuButton);
-        await driver.actions().sendKeys(Key.SPACE)
-            .perform();
+        await clickKey(Key.SPACE);
 
         expect(await editMenuButton.getAttribute('aria-expanded')).toBe('true');
     });
 
     test('ArrowUp moves focus to the last item in edit menu', async () => {
-        await loadUri(uri);
-
         const editMenuButton = await findByXpath(EDIT_MENU_XPATH);
-        await editMenuButton.click();
-        await driver.actions().sendKeys(Key.ENTER)
-            .perform();
-
-        // ArrowUp should go to last item
-        await driver.actions().sendKeys(Key.ARROW_UP)
-            .perform();
-
+        await driver.executeScript('arguments[0].focus()', editMenuButton);
+        await clickKey(Key.ENTER);
         const activeElement = await driver.switchTo().activeElement();
         const text = await activeElement.getText();
+        expect(text).toBe('Restore');
 
-        expect(text).toBe('Turn on Turbo Mode');
+        // ArrowUp should go to last item
+        await clickKey(Key.ARROW_UP);
+
+        const activeElement2 = await driver.switchTo().activeElement();
+        const text2 = await activeElement2.getText();
+
+        expect(text2).toBe('Turn on Turbo Mode');
     });
 
     test('ArrowDown twice moves focus back to the first item in edit menu', async () => {
-        await loadUri(uri);
-
         const editMenuButton = await findByXpath(EDIT_MENU_XPATH);
-        await editMenuButton.click();
-        await driver.actions().sendKeys(Key.ENTER)
-            .perform();
-        await driver.sleep(SLEEP_TIME);
-
-        // ArrowUp should go to last item
-        await driver.actions().sendKeys(Key.ARROW_DOWN, Key.ARROW_DOWN)
-            .perform();
-        await driver.sleep(SLEEP_TIME);
+        await driver.executeScript('arguments[0].focus()', editMenuButton);
+        await clickKeys([Key.ENTER, Key.ARROW_DOWN, Key.ARROW_DOWN]);
 
         const activeElement = await driver.switchTo().activeElement();
         const text = await activeElement.getText();
@@ -160,117 +149,93 @@ describe('Menu bar keyboard navigation', () => {
         expect(text).toBe('Restore');
     });
 
-    test('Enter, Space and ArrowRight opens the Language submenu', async () => {
-        await loadUri(uri);
-
+    test('Enter opens the Language submenu', async () => {
         const settingsMenuButton = await findByXpath(SETTINGS_MENU_XPATH);
-        await settingsMenuButton.click();
-        await driver.actions().sendKeys(Key.ENTER)
-            .perform();
-        await driver.actions().sendKeys(Key.ENTER)
-            .perform();
+        await driver.executeScript('arguments[0].focus()', settingsMenuButton);
+        await clickKeys([Key.ENTER, Key.ENTER]);
 
         const activeElement = await driver.switchTo().activeElement();
         const text = await activeElement.getText();
-
         expect(text).toBe('English');
+    });
 
-        await settingsMenuButton.click();
-        await driver.actions().sendKeys(Key.ENTER)
-            .perform();
-        await driver.actions().sendKeys(Key.SPACE)
-            .perform();
+    test('Space opens the Language submenu', async () => {
+        const settingsMenuButton = await findByXpath(SETTINGS_MENU_XPATH);
+        await driver.executeScript('arguments[0].focus()', settingsMenuButton);
+        await clickKeys([Key.ENTER, Key.SPACE]);
 
+        const activeElement = await driver.switchTo().activeElement();
+        const text = await activeElement.getText();
         expect(text).toBe('English');
+    });
 
-        await settingsMenuButton.click();
-        await driver.actions().sendKeys(Key.ENTER)
-            .perform();
-        await driver.actions().sendKeys(Key.ARROW_RIGHT)
-            .perform();
+    test('ArrowRight opens the Language submenu', async () => {
+        const settingsMenuButton = await findByXpath(SETTINGS_MENU_XPATH);
+        await driver.executeScript('arguments[0].focus()', settingsMenuButton);
+        await clickKeys([Key.ENTER, Key.ARROW_RIGHT]);
 
+        const activeElement = await driver.switchTo().activeElement();
+        const text = await activeElement.getText();
         expect(text).toBe('English');
     });
 
     test('ArrowLeft and Escape close the Language submenu', async () => {
-        await loadUri(uri);
-
         const settingsMenuButton = await findByXpath(SETTINGS_MENU_XPATH);
-        await settingsMenuButton.click();
-        await driver.actions().sendKeys(Key.ENTER)
-            .perform();
-
-        await driver.actions().sendKeys(Key.ARROW_RIGHT)
-            .perform();
-        await driver.actions().sendKeys(Key.ARROW_LEFT)
-            .perform();
+        await driver.executeScript('arguments[0].focus()', settingsMenuButton);
+        await clickKeys([Key.ENTER, Key.ARROW_RIGHT, Key.ARROW_LEFT]);
 
         const activeElement = await driver.switchTo().activeElement();
         const text = await activeElement.getText();
-
         expect(text).toBe('Language');
 
-        await driver.actions().sendKeys(Key.ARROW_RIGHT)
-            .perform();
-        await driver.actions().sendKeys(Key.ESCAPE)
-            .perform();
+        await clickKey(Key.ARROW_RIGHT);
 
-        expect(text).toBe('Language');
+        const activeElement2 = await driver.switchTo().activeElement();
+        const text2 = await activeElement2.getText();
+        expect(text2).toBe('English');
+
+        await clickKey(Key.ESCAPE);
+        const activeElement3 = await driver.switchTo().activeElement();
+        const text3 = await activeElement3.getText();
+        expect(text3).toBe('Language');
     });
 
     test('Tab closes the whole Settings menu', async () => {
-        await loadUri(uri);
-
         const settingsMenuButton = await findByXpath(SETTINGS_MENU_XPATH);
-        await settingsMenuButton.click();
-        await driver.actions().sendKeys(Key.ENTER, Key.ENTER, Key.TAB)
-            .perform();
+        await driver.executeScript('arguments[0].focus()', settingsMenuButton);
+        await clickKeys([Key.ENTER, Key.ENTER, Key.TAB]);
         
         const activeElement = await driver.switchTo().activeElement();
         expect(await activeElement.getAttribute('aria-label')).toBe('File menu');
     });
     
     test('Tab closes the whole Settings menu after arrows nav', async () => {
-        await loadUri(uri);
-
-        await driver.actions().sendKeys(Key.TAB, Key.TAB)
-            .perform();
-        await driver.sleep(SLEEP_TIME);
+        const settingsMenuButton = await findByXpath(SETTINGS_MENU_XPATH);
+        await driver.executeScript('arguments[0].focus()', settingsMenuButton);
         const activeElement = await driver.switchTo().activeElement();
         expect(await activeElement.getAttribute('aria-label')).toBe('Settings menu');
         
-        await driver.actions().sendKeys(Key.ENTER)
-            .perform();
-        await driver.sleep(SLEEP_TIME);
+        await clickKey(Key.ENTER);
         const activeElement2 = await driver.switchTo().activeElement();
         expect(await activeElement2.getText()).toBe('Language');
 
-        await driver.actions().sendKeys(Key.ARROW_DOWN)
-            .perform();
-        await driver.sleep(SLEEP_TIME);
+        await clickKey(Key.ARROW_DOWN);
         const activateElement3 = await driver.switchTo().activeElement();
         expect(await activateElement3.getText()).toBe('Color Mode');
 
-        await driver.actions().sendKeys(Key.ENTER)
-            .perform();
-        await driver.sleep(SLEEP_TIME);
+        await clickKey(Key.ENTER);
         const activeElement4 = await driver.switchTo().activeElement();
         expect(await activeElement4.getText()).toBe('Original');
 
-        await driver.actions().sendKeys(Key.TAB)
-            .perform();
-        await driver.sleep(SLEEP_TIME);
+        await clickKey(Key.TAB);
         const activeElement5 = await driver.switchTo().activeElement();
         expect(await activeElement5.getAttribute('aria-label')).toBe('File menu');
     });
 
     test('Tab closes File menu', async () => {
-        await loadUri(uri);
-
         const fileMenuButton = await findByXpath(FILE_MENU_XPATH);
-        await fileMenuButton.click();
-        await driver.actions().sendKeys(Key.ENTER, Key.TAB)
-            .perform();
+        await driver.executeScript('arguments[0].focus()', fileMenuButton);
+        await clickKeys([Key.ENTER, Key.TAB]);
 
         const activeElement = await driver.switchTo().activeElement();
         expect(await activeElement.getAttribute('aria-label')).toBe('Edit menu');
@@ -278,11 +243,51 @@ describe('Menu bar keyboard navigation', () => {
         await loadUri(uri);
 
         const fileMenuButton2 = await findByXpath(FILE_MENU_XPATH);
-        await fileMenuButton2.click();
-        await driver.actions().sendKeys(Key.ENTER, Key.ARROW_DOWN, Key.TAB)
-            .perform();
+        await driver.executeScript('arguments[0].focus()', fileMenuButton2);
+        await clickKeys([Key.ENTER, Key.ARROW_DOWN, Key.TAB]);
 
         const activeElement2 = await driver.switchTo().activeElement();
         expect(await activeElement2.getAttribute('aria-label')).toBe('Edit menu');
+    });
+
+    test('Shift+Tab closes Edit menu and goes back to File menu', async () => {
+        const editMenuButton = await findByXpath(EDIT_MENU_XPATH);
+        await driver.executeScript('arguments[0].focus()', editMenuButton);
+        await clickKey(Key.ENTER);
+        await driver.actions()
+            .keyDown(Key.SHIFT)
+            .sendKeys(Key.TAB)
+            .keyUp(Key.SHIFT)
+            .perform();
+        await driver.sleep(SLEEP_TIME);
+
+        const activeElement = await driver.switchTo().activeElement();
+        expect(await activeElement.getAttribute('aria-label')).toBe('File menu');
+    });
+
+    test('Changing to RTL language should change ARROW_LEFT and ARROW_RIGHT behavior', async () => {
+        const settingsMenuButton = await findByXpath(SETTINGS_MENU_XPATH);
+        await driver.executeScript('arguments[0].focus()', settingsMenuButton);
+        await clickKeys([Key.ENTER, Key.ARROW_RIGHT]);
+        const persianMenuItem = await findByXpath(
+            '//li[normalize-space(text())="فارسی"]'
+        );
+        await persianMenuItem.click();
+        await clickKey(Key.ENTER);
+
+        await clickKeys([Key.TAB, Key.TAB, Key.ENTER]);
+
+        await clickKey(Key.ARROW_LEFT);
+        const activeElement = await driver.switchTo().activeElement();
+        const text = await activeElement.getText();
+        expect(text).toBe('فارسی');
+        // Suspiciously fragile logic, might need to
+        // be altered in case of language option changes
+        const englishMenuItem = await findByXpath('//li[text()="English"]');
+        await englishMenuItem.click();
+
+        await clickKeys([Key.TAB, Key.TAB]);
+        const activeElement2 = await driver.switchTo().activeElement();
+        expect(await activeElement2.getAttribute('aria-label')).toBe('Settings menu');
     });
 });
