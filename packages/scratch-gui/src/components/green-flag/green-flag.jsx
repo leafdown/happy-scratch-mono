@@ -27,9 +27,9 @@ const GreenFlagComponent = function (props) {
         <button
             className={styles.greenFlagButton}
             onClick={onClick}
-            {...componentProps}
             aria-label={intl.formatMessage(startProjectMessage)}
             {...(isFullScreen ? {'data-focusable': true} : {})}
+            {...componentProps}
         >
             <img
                 className={classNames(
