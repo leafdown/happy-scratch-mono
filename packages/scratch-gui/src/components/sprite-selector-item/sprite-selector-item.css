@@ -26,6 +26,8 @@
     background: none;
     padding: 0;
     margin: 0;
+    border: none;
+    appearance: none;
     font: inherit;
 }
 
