@@ -202,7 +202,7 @@ describe('Working with the blocks', () => {
         await el.sendKeys('newname');
         await el.sendKeys(Key.ENTER);
         // wait until the updated costume appears in costume item list panel
-        await findByXpath("//div[contains(@class,'sprite-selector-item_is-selected_')]" +
+        await findByXpath("//button[contains(@class,'sprite-selector-item_is-selected_')]" +
             "//div[contains(text(), 'newname')]");
 
         // Make sure it is updated in the block menu
@@ -221,7 +221,7 @@ describe('Working with the blocks', () => {
         await el.sendKeys('<NewCostume>');
         await el.sendKeys(Key.ENTER);
         // wait until the updated costume appears in costume item list panel
-        await findByXpath("//div[contains(@class,'sprite-selector-item_is-selected_')]" +
+        await findByXpath("//button[contains(@class,'sprite-selector-item_is-selected_')]" +
             "//div[contains(text(), '<NewCostume>')]");
 
         // Make sure it is updated in the block menu
@@ -247,7 +247,7 @@ describe('Working with the blocks', () => {
         await driver.sleep(500); // Wait for thermometer menu to come up
         await clickXpath('//button[@aria-label="Paint"]');
         // wait until the new costume appears in costume item list panel
-        await findByXpath("//div[contains(@class,'sprite-selector-item_is-selected_')]" +
+        await findByXpath("//button[contains(@class,'sprite-selector-item_is-selected_')]" +
             "//div[contains(text(), 'costume3')]");
         await clickText('costume3', scope.costumesTab);
         // Check that the menu has been updated
@@ -262,7 +262,7 @@ describe('Working with the blocks', () => {
         await clickXpath('//button[@aria-label="Choose a Sound"]');
         await clickText('A Bass', scope.modal); // Should close the modal
         // wait until the selected sound appears in sounds item list panel
-        await findByXpath("//div[contains(@class,'sprite-selector-item_is-selected_')]" +
+        await findByXpath("//button[contains(@class,'sprite-selector-item_is-selected_')]" +
             "//div[contains(text(), 'A Bass')]");
         await clickText('Code');
         await clickBlocksCategory('Sound');
