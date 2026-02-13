@@ -149,8 +149,6 @@ const SoundEditor = props => {
                 <div className={styles.inputGroup}>
                     <Label text={intl.formatMessage(messages.sound)}>
                         <BufferedInput
-                            // TODO: Why 1? Update when working on correct order of navigation
-                            tabIndex="1"
                             type="text"
                             value={props.name}
                             onSubmit={props.onChangeName}
@@ -158,9 +156,9 @@ const SoundEditor = props => {
                     </Label>
                     <div className={styles.buttonGroup}>
                         <button
+                            aria-label={intl.formatMessage(messages.undo)}
                             className={styles.button}
                             disabled={!props.canUndo}
-                            title={intl.formatMessage(messages.undo)}
                             onClick={props.onUndo}
                         >
                             <img
@@ -172,7 +170,7 @@ const SoundEditor = props => {
                         <button
                             className={styles.button}
                             disabled={!props.canRedo}
-                            title={intl.formatMessage(messages.redo)}
+                            aria-label={intl.formatMessage(messages.redo)}
                             onClick={props.onRedo}
                         >
                             <img
@@ -233,8 +231,8 @@ const SoundEditor = props => {
                 <div className={styles.inputGroup}>
                     {props.playhead ? (
                         <button
-                            className={classNames(styles.roundButton, styles.stopButtonn)}
-                            title={intl.formatMessage(messages.stop)}
+                            className={classNames(styles.roundButton, styles.stopButton)}
+                            aria-label={intl.formatMessage(messages.stop)}
                             onClick={props.onStop}
                         >
                             <img
@@ -245,7 +243,7 @@ const SoundEditor = props => {
                     ) : (
                         <button
                             className={classNames(styles.roundButton, styles.playButton)}
-                            title={intl.formatMessage(messages.play)}
+                            aria-label={intl.formatMessage(messages.play)}
                             onClick={props.onPlay}
                         >
                             <img
