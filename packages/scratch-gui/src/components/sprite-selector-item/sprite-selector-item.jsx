@@ -7,6 +7,7 @@ import contextMenuStyles from '../context-menu/context-menu.css';
 import {DangerousMenuItem, MenuItem} from '../context-menu/context-menu.jsx';
 import {FormattedMessage} from 'react-intl';
 import ContextMenu from '../../lib/radix-ui-context-menu.js';
+import {KEY} from '../../lib/keyboard-keys.js';
 
 const SpriteSelectorItem = props => {
     useEffect(() => {
@@ -20,6 +21,12 @@ const SpriteSelectorItem = props => {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    const handleKeyDown = useCallback(event => {
+        if (event.key === KEY.ENTER) {
+            props.onClick(event);
+        }
+    }, [props.onClick]);
 
     return (
         <ContextMenu.Root modal={false}>
@@ -35,6 +42,7 @@ const SpriteSelectorItem = props => {
                         [styles.isSelected]: props.selected
                     })}
                     onClick={props.onClick}
+                    onKeyDown={handleKeyDown}
                     onMouseEnter={props.onMouseEnter}
                     onMouseLeave={props.onMouseLeave}
                     onMouseDown={props.onMouseDown}

@@ -90,14 +90,6 @@ const DeleteConfirmationPrompt = ({
     const modalPositionValues = calculateModalPosition(relativeElemRef, modalPosition);
     const yesButtonRef = React.useRef(null); // keeping ref of yes button to focus on mount
 
-    React.useEffect(() => {
-        requestAnimationFrame(() => {
-            if (yesButtonRef.current) {
-                yesButtonRef.current.focus();
-            }
-        });
-    }, []);
-
     return (<ReactModal
         isOpen
         onAfterOpen={() => {
