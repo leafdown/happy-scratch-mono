@@ -23,24 +23,13 @@ const ActionMenu = ({
     const containerRef = useRef(null);
     const buttonRef = useRef(null);
     const [isExpanded, setIsExpanded] = useState(false);
-    const skipNextBlurRef = useRef(false);
     const itemRefs = useRef([]);
 
     useEffect(() => {
         if (!isExpanded) {
-            if (skipNextBlurRef.current) {
-                // Skip the blur this time
-                skipNextBlurRef.current = false;
-                return;
-            }
-            // If menu is closed, blur any focused element to prevent keyboard events from affecting it
-            if (document.activeElement !== document.body) {
-                document.activeElement.blur();
-            }
-            
             buttonRef?.current?.blur();
         }
-    }, [isExpanded, buttonRef, skipNextBlurRef]);
+    }, [isExpanded, buttonRef]);
 
     // Handle clicks/touches outside to close menu
     useEffect(() => {
@@ -51,9 +40,9 @@ const ActionMenu = ({
             }
         };
 
-        document.addEventListener('mousedown', handleTouchOutside);
+        document.addEventListener('touchstart', handleTouchOutside);
         return () => {
-            document.removeEventListener('mousedown', handleTouchOutside);
+            document.removeEventListener('touchstart', handleTouchOutside);
         };
     }, [containerRef, setIsExpanded]);
 
@@ -114,8 +103,6 @@ const ActionMenu = ({
                 if (currentIndex > 0) {
                     filteredFocusables[currentIndex - 1].focus();
                 }
-
-                skipNextBlurRef.current = true;
             }
             return;
         }
@@ -184,6 +171,8 @@ const ActionMenu = ({
             })}
             onMouseEnter={handleToggleOpenState}
             onMouseLeave={handleClosePopover}
+            onFocus={handleToggleOpenState}
+            onBlur={handleClosePopover}
             ref={containerRef}
         >
             <button
