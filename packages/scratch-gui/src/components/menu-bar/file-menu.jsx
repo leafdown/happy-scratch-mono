@@ -10,7 +10,7 @@ import MenuBarMenu from './menu-bar-menu.jsx';
 import {MenuItem, MenuSection} from '../menu/menu.jsx';
 import SB3Downloader from '../../containers/sb3-downloader.jsx';
 import dropdownCaret from './dropdown-caret.svg';
-import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
+import useMenuNavigation from '../../hooks/use-menu-navigation';
 
 import sharedMessages from '../../lib/shared-messages';
 

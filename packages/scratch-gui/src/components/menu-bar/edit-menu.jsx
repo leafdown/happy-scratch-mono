@@ -8,7 +8,7 @@ import editIcon from './icon--edit.svg';
 import {useIntl, FormattedMessage, defineMessage} from 'react-intl';
 import MenuBarMenu from './menu-bar-menu.jsx';
 import {MenuItem, MenuSection} from '../menu/menu.jsx';
-import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
+import useMenuNavigation from '../../hooks/use-menu-navigation';
 import dropdownCaret from './dropdown-caret.svg';
 import DeletionRestorer from '../../containers/deletion-restorer.jsx';
 import TurboMode from '../../containers/turbo-mode.jsx';

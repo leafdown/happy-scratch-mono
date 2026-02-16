@@ -9,7 +9,7 @@ import check from './check.svg';
 import {MenuItem, Submenu} from '../menu/menu.jsx';
 import languageIcon from '../language-selector/language-icon.svg';
 import {selectLocale} from '../../reducers/locales.js';
-import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
+import useMenuNavigation from '../../hooks/use-menu-navigation';
 
 import stylesSettingsMenu from './settings-menu.css';
 import stylesLanguageMenu from './language-menu.css';

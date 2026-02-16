@@ -7,7 +7,7 @@ import {connect} from 'react-redux';
 import {useIntl, FormattedMessage, defineMessage} from 'react-intl';
 import MenuBarMenu from './menu-bar-menu.jsx';
 import {MenuItem, MenuSection} from '../menu/menu.jsx';
-import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
+import useMenuNavigation from '../../hooks/use-menu-navigation';
 
 const EditorModes = {
     NOW: 'NOW',

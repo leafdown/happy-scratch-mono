@@ -7,7 +7,7 @@ import {connect} from 'react-redux';
 import MenuBarMenu from './menu-bar-menu.jsx';
 import Button from '../button/button.jsx';
 import {MenuItem} from '../menu/menu.jsx';
-import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
+import useMenuNavigation from '../../hooks/use-menu-navigation';
 
 import stylesMenuBar from './menu-bar.css';
 import stylesAboutMenu from './about-menu.css';

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import React, {useMemo} from 'react';
 import {useIntl, FormattedMessage, defineMessage} from 'react-intl';
 import {connect} from 'react-redux';
-import useMenuNavigation from '../../hooks/use-menu-navigation.jsx';
+import useMenuNavigation from '../../hooks/use-menu-navigation';
 
 import LanguageMenu from './language-menu.jsx';
 import MenuBarMenu from './menu-bar-menu.jsx';
