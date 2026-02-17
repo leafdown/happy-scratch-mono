@@ -76,7 +76,7 @@ const StageHeaderComponent = function (props) {
     const intl = useIntl();
 
     const containerRef = useRef(null);
-    const {trapFocus, releaseFocus} = useFocusTrap(containerRef);
+    const {trapFocus, releaseFocus} = useFocusTrap(containerRef, 'data-focusable');
 
     useLayoutEffect(() => {
         if (isFullScreen) {
@@ -105,6 +105,10 @@ const StageHeaderComponent = function (props) {
         ),
         [projectId, onUpdateProjectThumbnail]
     );
+
+    const componentRef = useCallback(el => {
+        containerRef.current = el;
+    }, []);
 
     if (isFullScreen) {
         const stageDimensions = getStageDimensions(null, true);
@@ -143,7 +147,7 @@ const StageHeaderComponent = function (props) {
         header = (
             <Box
                 className={styles.stageHeaderWrapperOverlay}
-                componentRef={containerRef}
+                componentRef={componentRef}
             >
                 <Box
                     className={styles.stageMenuWrapper}

@@ -7,14 +7,14 @@ import {KEY} from '../lib/navigation-keys';
  * @param {string} dataAttribute - Data attribute used to mark focusable elements (default: 'data-focusable')
  * @returns {{trapFocus: () => void, releaseFocus: () => void}} - Functions to activate and deactivate the focus trap
  */
-const useFocusTrap = (containerRef, dataAttribute = 'data-focusable') => {
+const useFocusTrap = (containerRef, dataAttribute) => {
     const getFocusableElements = useCallback(() => {
         const container = containerRef.current;
         if (!container) return [];
 
         return Array.from(
             container.querySelectorAll(`[${dataAttribute}]`)
-        ).filter(el => !el.hasAttribute('disabled'));
+        ).filter(el => !el.disabled && el.offsetParent !== null);
     }, [containerRef, dataAttribute]);
 
     const handleKeyDown = useCallback(event => {
@@ -27,7 +27,10 @@ const useFocusTrap = (containerRef, dataAttribute = 'data-focusable') => {
         const last = focusable[focusable.length - 1];
         const active = document.activeElement;
 
-        if (!containerRef.current.contains(active)) {
+        const container = containerRef.current;
+        if (!container) return;
+
+        if (!container.contains(active)) {
             event.preventDefault();
             first.focus();
             return;
@@ -49,11 +52,6 @@ const useFocusTrap = (containerRef, dataAttribute = 'data-focusable') => {
         if (!container) return;
 
         document.addEventListener('keydown', handleKeyDown);
-
-        const focusable = getFocusableElements();
-        if (focusable.length) {
-            focusable[0].focus();
-        }
     }, [handleKeyDown, getFocusableElements]);
 
     const releaseFocus = useCallback(() => {

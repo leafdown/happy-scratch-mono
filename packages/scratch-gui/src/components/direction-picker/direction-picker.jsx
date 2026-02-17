@@ -56,6 +56,8 @@ const DirectionPicker = props => {
     const popoverRef = useRef(null);
 
     useEffect(() => {
+        if (!props.popoverOpen) return;
+
         const handleFocusIn = event => {
             const target = event.target;
             if (
@@ -73,7 +75,7 @@ const DirectionPicker = props => {
         return () => {
             document.removeEventListener('focusin', handleFocusIn);
         };
-    }, [containerRef, props.onClosePopover]);
+    }, [props.onClosePopover]);
 
     return (
         <Label

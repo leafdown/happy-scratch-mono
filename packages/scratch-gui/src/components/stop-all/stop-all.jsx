@@ -29,7 +29,7 @@ const StopAllComponent = function (props) {
             onClick={onClick}
             aria-label={intl.formatMessage(stopProjectMessage)}
             disabled={!active}
-            {...(isFullScreen ? {'data-focusable': true} : {})}
+            data-focusable={isFullScreen || null}
             {...componentProps}
         >
             <img
