@@ -247,6 +247,8 @@ ActionMenu.propTypes = {
 
 export default React.memo(ActionMenu, (prevProps, nextProps) =>
     // This check prevents re-rendering while the project is updating.
+    // This is needed because of the sloppy way the props are passed as a new object,
+    // which should be refactored.
     // Only re-render if the title changes
     prevProps.title === nextProps.title
 );
