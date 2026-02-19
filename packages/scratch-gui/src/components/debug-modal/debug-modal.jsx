@@ -12,6 +12,7 @@ import debugIconInverted from './icons/icon--debug-inverted.svg';
 import closeIcon from './icons/icon--close.svg';
 import prevIcon from './icons/icon--prev.svg';
 import nextIcon from './icons/icon--next.svg';
+import {KEY} from '../../lib/navigation-keys';
 
 const messages = defineMessages({
     title: {
@@ -30,6 +31,7 @@ const logTopicChange = topicIndex => {
 
 const DebugModal = ({isOpen, onClose = () => {}}) => {
     const [selectedTopicIndex, setSelectedTopicIndex] = useState(0);
+    const slideRefs = sections.map(() => React.createRef());
 
     // Preload images
     useEffect(() => {
@@ -63,6 +65,45 @@ const DebugModal = ({isOpen, onClose = () => {}}) => {
         });
         onClose();
     }, [onClose]);
+
+    const handleKeyDownSlides = useCallback(e => {
+        if ([KEY.ARROW_LEFT, KEY.ARROW_UP, KEY.ARROW_RIGHT, KEY.ARROW_DOWN].includes(e.key)) {
+            e.preventDefault();
+
+            let nextIndex;
+            if (e.key === KEY.ARROW_LEFT || e.key === KEY.ARROW_UP) {
+                nextIndex = selectedTopicIndex > 0 ? selectedTopicIndex - 1 : sections.length - 1;
+            } else {
+                nextIndex = selectedTopicIndex < sections.length - 1 ? selectedTopicIndex + 1 : 0;
+            }
+
+            if (slideRefs[nextIndex] && slideRefs[nextIndex].current) {
+                slideRefs[nextIndex].current.focus();
+            }
+
+            setSelectedTopicIndex(nextIndex);
+            logTopicChange(nextIndex);
+        }
+    }, [slideRefs]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        window.addEventListener('keydown', handleKeyDownSlides);
+        return () => window.removeEventListener('keydown', handleKeyDownSlides);
+    }, [isOpen, handleKeyDownSlides]);
+
+    const handleKeyDownPrevious = useCallback(e => {
+        if (e.key === KEY.ENTER) {
+            handlePrevious();
+        }
+    }, [handlePrevious]);
+
+    const handleKeyDownNext = useCallback(e => {
+        if (e.key === KEY.ENTER) {
+            handleNext();
+        }
+    }, [handleNext]);
 
     useEffect(() => {
         if (isOpen) {
@@ -112,6 +153,9 @@ const DebugModal = ({isOpen, onClose = () => {}}) => {
                             })}
                             // eslint-disable-next-line react/jsx-no-bind
                             onClick={() => handleTopicSelect(index)}
+                            tabIndex={-1}
+                            role="button"
+                            ref={slideRefs[index]}
                         >
                             <div className={styles.debugIcon}>
                                 <img
@@ -150,6 +194,9 @@ const DebugModal = ({isOpen, onClose = () => {}}) => {
                             className={classNames(styles.previousIcon, {
                                 [styles.hidden]: selectedTopicIndex === 0
                             })}
+                            tabIndex={0}
+                            role="button"
+                            onKeyDown={handleKeyDownPrevious}
                         />
                         <img
                             src={nextIcon}
@@ -158,6 +205,9 @@ const DebugModal = ({isOpen, onClose = () => {}}) => {
                             className={classNames(styles.nextIcon, {
                                 [styles.hidden]: selectedTopicIndex === sections.length - 1
                             })}
+                            tabIndex={0}
+                            role="button"
+                            onKeyDown={handleKeyDownNext}
                         />
                     </div>
                 </div>
