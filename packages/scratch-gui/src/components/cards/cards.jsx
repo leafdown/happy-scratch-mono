@@ -359,7 +359,7 @@ const Cards = props => {
     useEffect(() => {
         // Only focus if there’s an actual tutorial step (image/video)
         const steps = content[activeDeckId]?.steps;
-        const isTutorialStep = steps?.[step]?.video || steps?.[step]?.image;
+        const isTutorialStep = steps?.[step]?.video;
 
         if (isTutorialStep && cardRef.current) {
             // Defer focus to next animation frame for layout stability
