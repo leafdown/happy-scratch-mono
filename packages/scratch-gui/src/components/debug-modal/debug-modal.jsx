@@ -31,7 +31,7 @@ const logTopicChange = topicIndex => {
 
 const DebugModal = ({isOpen, onClose = () => {}}) => {
     const [selectedTopicIndex, setSelectedTopicIndex] = useState(0);
-    const slideRefs = sections.map(() => React.createRef());
+    const slideRefs = React.useMemo(() => sections.map(() => React.createRef()), []);
 
     // Preload images
     useEffect(() => {
@@ -84,7 +84,7 @@ const DebugModal = ({isOpen, onClose = () => {}}) => {
             setSelectedTopicIndex(nextIndex);
             logTopicChange(nextIndex);
         }
-    }, [slideRefs]);
+    }, [selectedTopicIndex]);
 
     useEffect(() => {
         if (!isOpen) return;
