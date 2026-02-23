@@ -26,7 +26,6 @@ const ActionMenu = ({
 
     const handleToggleOpenState = useCallback(() => {
         // Mouse enter back in after timeout was started prevents it from closing.
-        
         if (closeTimeoutRef.current) {
             clearTimeout(closeTimeoutRef.current);
             closeTimeoutRef.current = null;
@@ -109,6 +108,19 @@ const ActionMenu = ({
             closeTimeoutRef.current = null;
         }, CLOSE_DELAY);
     }, []);
+
+    useEffect(() => {
+        const items = itemRefs.current;
+        const currentFocusedIndex = items.indexOf(document.activeElement);
+        if (isExpanded && items.length) {
+            const timer = setTimeout(() => {
+                // blur and refocus in order to recalculate tooltip position upon expansion
+                if (items[currentFocusedIndex]) items[currentFocusedIndex].blur();
+                focusItem(items[currentFocusedIndex]);
+            }, CLOSE_DELAY);
+            return () => clearTimeout(timer);
+        }
+    }, [isExpanded, focusItem, itemRefs.current.length]);
 
     const clickDelayer = useCallback(
         // Return a wrapped action that manages the menu closing.
