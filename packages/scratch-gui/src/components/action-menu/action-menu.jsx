@@ -116,7 +116,6 @@ const ActionMenu = ({
             const timer = setTimeout(() => {
                 // blur and refocus in order to recalculate tooltip position upon expansion
                 if (items[currentFocusedIndex]) {
-                    setIsExpanded(true);
                     items[currentFocusedIndex].blur();
                     focusItem(items[currentFocusedIndex]);
                 }
