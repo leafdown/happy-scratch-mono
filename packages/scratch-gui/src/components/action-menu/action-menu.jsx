@@ -32,7 +32,6 @@ const ActionMenu = ({
 
     const handleToggleOpenState = useCallback(() => {
         // Mouse enter back in after timeout was started prevents it from closing.
-        console.log('Opening ' + mainTitle);
         if (closeTimeoutRef.current) {
             clearTimeout(closeTimeoutRef.current);
             closeTimeoutRef.current = null;
