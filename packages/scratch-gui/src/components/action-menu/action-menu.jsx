@@ -28,7 +28,6 @@ const ActionMenu = ({
 
     const focusItem = useCallback(item => {
         if (item) {
-            console.log('focusing item', item);
             lastFocusedItem.current = item;
             item.focus();
         }
@@ -225,6 +224,7 @@ const ActionMenu = ({
                                 onClickItem(e);
                                 // timeout in case it loads something that loses the tooltip message
                                 // the exact delay number may need to adjust based on the time it takes to load
+                                lastFocusedItem.current = e.currentTarget;
                                 setTimeout(() => {
                                     refocusLastFocusedItem();
                                 }, CLOSE_DELAY);
