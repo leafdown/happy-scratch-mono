@@ -99,6 +99,7 @@
 
     .topic-item {
         display: flex;
+        width: 100%;
         gap: 8px;
         align-items: center;
         padding: 8px;
@@ -156,7 +157,8 @@
         margin-top: 20px;
     }
 
-    button {
+    .modal-header button,
+    .navigation-buttons button {
         margin: 5px;
     }
 }

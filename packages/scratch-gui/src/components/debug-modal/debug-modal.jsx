@@ -148,14 +148,15 @@ const DebugModal = ({isOpen, onClose = () => {}}) => {
             <div className={styles.modalContent} >
                 <div className={styles.topicList}>
                     {sections.map((section, index) => (
-                        <div
+                        <button
                             key={index}
-                            className={classNames(styles.topicItem, {
-                                [styles.active]: selectedTopicIndex === index
-                            })}
+                            className={classNames(styles.topicItem, styles.buttonStyleRemover,
+                                {
+                                    [styles.active]: selectedTopicIndex === index
+                                })}
                             // eslint-disable-next-line react/jsx-no-bind
                             onClick={() => handleTopicSelect(index)}
-                            role="button"
+                            tabIndex={-1}
                         >
                             <div className={styles.debugIcon}>
                                 <img
@@ -168,7 +169,7 @@ const DebugModal = ({isOpen, onClose = () => {}}) => {
                             <FormattedMessage
                                 {...(section.sectionTitle ?? section.title)}
                             />
-                        </div>
+                        </button>
                     ))}
                 </div>
                 <div className={styles.infoContainer}>
@@ -189,8 +190,8 @@ const DebugModal = ({isOpen, onClose = () => {}}) => {
                     <div className={styles.navigationButtons}>
                         <button
                             onClick={handlePrevious}
-                            className={classNames(styles.previousIcon,
-                                styles.buttonStyleRemover,
+                            className={classNames(styles.buttonStyleRemover,
+                                styles.previousIcon,
                                 {[styles.hidden]: selectedTopicIndex === 0})}
                             onKeyDown={handleKeyDownPrevious}
                         >
