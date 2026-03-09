@@ -141,6 +141,14 @@ const ActionMenu = ({
         }
     }, [focusItem]);
 
+    const handleItemClick = useCallback(onClickItem => e => {
+        onClickItem(e);
+        ReactTooltip.hide();
+        setIsExpanded(false);
+        setForceHide(true);
+        buttonRef.current.blur();
+    }, []);
+
     return (
         <div
             className={classNames(styles.menuContainer, className, {
@@ -193,14 +201,6 @@ const ActionMenu = ({
                             const isComingSoon = !onClickItem;
                             const hasFileInput = fileInput;
                             const tooltipId = `${mainTooltipId}-${title}`;
-                            
-                            const handleClick = useCallback(e => {
-                                onClickItem(e);
-                                ReactTooltip.hide();
-                                setIsExpanded(false);
-                                setForceHide(true);
-                                buttonRef.current.blur();
-                            }, [onClickItem]);
 
                             return (
                                 <li key={`${tooltipId}-${keyId}`}>
@@ -211,7 +211,7 @@ const ActionMenu = ({
                                         })}
                                         data-for={tooltipId}
                                         data-tip={title}
-                                        onClick={handleClick}
+                                        onClick={handleItemClick(onClickItem)}
                                         tabIndex={-1}
                                         ref={el => {
                                             itemRefs.current[keyId] = el;
