@@ -23,8 +23,7 @@ import styles from './save-status.css';
 const SaveStatus = ({
     alertsList,
     projectChanged,
-    onClickSave,
-    formattedMessage
+    onClickSave
 }) => (
     filterInlineAlerts(alertsList).length > 0 ? (
         <InlineMessages />
@@ -33,19 +32,18 @@ const SaveStatus = ({
             className={styles.saveNow}
             onClick={onClickSave}
         >
-            {formattedMessage || <FormattedMessage
+            <FormattedMessage
                 defaultMessage="Save Now"
                 description="Title bar link for saving now"
                 id="gui.menuBar.saveNowLink"
-            />}
+            />
         </div>
     ));
 
 SaveStatus.propTypes = {
     alertsList: PropTypes.arrayOf(PropTypes.object),
     onClickSave: PropTypes.func,
-    projectChanged: PropTypes.bool,
-    formattedMessage: PropTypes.string
+    projectChanged: PropTypes.bool
 };
 
 const mapStateToProps = state => ({

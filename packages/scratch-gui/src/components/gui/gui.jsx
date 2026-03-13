@@ -541,9 +541,9 @@ const GUIComponent = props => {
                                 ariaRole="region"
                                 ariaLabel={intl.formatMessage(ariaMessages.stage)}
                                 manuallySaveThumbnails={manuallySaveThumbnails}
+                                userOwnsProject={userOwnsProject}
                                 onUpdateProjectThumbnail={onUpdateProjectThumbnail}
                                 isInEditor
-                                isOwner={canSave}
                             />
                             <Box
                                 className={styles.targetWrapper}

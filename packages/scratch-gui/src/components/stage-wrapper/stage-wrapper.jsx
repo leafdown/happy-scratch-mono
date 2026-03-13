@@ -22,7 +22,7 @@ const StageWrapperComponent = function (props) {
         manuallySaveThumbnails,
         onUpdateProjectThumbnail,
         isInEditor,
-        isOwner,
+        userOwnsProject,
         stageSize,
         vm
     } = props;
@@ -42,7 +42,7 @@ const StageWrapperComponent = function (props) {
                 <StageHeader
                     manuallySaveThumbnails={manuallySaveThumbnails}
                     isInEditor={isInEditor}
-                    isOwner={isOwner}
+                    userOwnsProject={userOwnsProject}
                     onUpdateProjectThumbnail={onUpdateProjectThumbnail}
                     stageSize={stageSize}
                     vm={vm}

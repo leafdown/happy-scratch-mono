@@ -88,7 +88,7 @@ const StageHeaderComponent = function (props) {
         vm,
         isInEditor,
         isProjectLoaded,
-        isOwner,
+        userOwnsProject,
         showThumbnailSetting,
         showThumbnailSuccess,
         showThumbnailError
@@ -209,7 +209,7 @@ const StageHeaderComponent = function (props) {
                 <Box className={styles.stageMenuWrapper}>
                     <Controls vm={vm} />
                     <div className={styles.stageSizeRow}>
-                        {manuallySaveThumbnails && isInEditor && isProjectLoaded && isOwner && (
+                        {manuallySaveThumbnails && isInEditor && isProjectLoaded && userOwnsProject && (
                             <Button
                                 aria-label={intl.formatMessage(messages.setThumbnail)}
                                 title={intl.formatMessage(messages.setThumbnail)}
@@ -292,7 +292,7 @@ StageHeaderComponent.propTypes = {
     vm: PropTypes.instanceOf(VM).isRequired,
     isInEditor: PropTypes.bool,
     isProjectLoaded: PropTypes.bool,
-    isOwner: PropTypes.bool.isRequired,
+    userOwnsProject: PropTypes.bool.isRequired,
     showThumbnailSetting: PropTypes.func,
     showThumbnailSuccess: PropTypes.func,
     showThumbnailError: PropTypes.func
