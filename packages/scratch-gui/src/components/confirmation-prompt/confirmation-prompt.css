@@ -44,6 +44,10 @@
     cursor: pointer;
 }
 
+.button-row button:focus {
+    outline: auto;
+}
+
 .button-row button span {
     color: var(--white-white-100, #FFF);
     font-family: "Helvetica Neue";

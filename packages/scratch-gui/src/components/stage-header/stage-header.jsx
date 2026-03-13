@@ -88,6 +88,7 @@ const StageHeaderComponent = function (props) {
         vm,
         isInEditor,
         isProjectLoaded,
+        isOwner,
         showThumbnailSetting,
         showThumbnailSuccess,
         showThumbnailError
@@ -97,7 +98,6 @@ const StageHeaderComponent = function (props) {
     let header = null;
 
     const [isThumbnailPromptOpen, setIsThumbnailPromptOpen] = React.useState(false);
-
 
     const onUpdateThumbnail = useCallback(
         throttle(
@@ -209,7 +209,7 @@ const StageHeaderComponent = function (props) {
                 <Box className={styles.stageMenuWrapper}>
                     <Controls vm={vm} />
                     <div className={styles.stageSizeRow}>
-                        {manuallySaveThumbnails && isInEditor && isProjectLoaded && (
+                        {manuallySaveThumbnails && isInEditor && isProjectLoaded && isOwner && (
                             <Button
                                 aria-label={intl.formatMessage(messages.setThumbnail)}
                                 title={intl.formatMessage(messages.setThumbnail)}
@@ -263,7 +263,7 @@ const mapStateToProps = state => {
     const loadingState = projectState.loadingState;
 
     return {
-        projectId: state.scratchGui.projectState.projectId,
+        projectId: projectState.projectId,
         // This is the button's mode, as opposed to the actual current state
         stageSizeMode: state.scratchGui.stageSize.stageSize,
         isProjectLoaded: getIsShowingWithId(loadingState) || getIsUpdating(loadingState)
@@ -292,6 +292,7 @@ StageHeaderComponent.propTypes = {
     vm: PropTypes.instanceOf(VM).isRequired,
     isInEditor: PropTypes.bool,
     isProjectLoaded: PropTypes.bool,
+    isOwner: PropTypes.bool.isRequired,
     showThumbnailSetting: PropTypes.func,
     showThumbnailSuccess: PropTypes.func,
     showThumbnailError: PropTypes.func

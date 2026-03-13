@@ -1,4 +1,5 @@
-import React, {useRef, useCallback} from 'react';
+import React, {useRef, useCallback, useEffect} from 'react';
+import debounce from 'lodash.debounce';
 import PropTypes from 'prop-types';
 import ReactModal from 'react-modal';
 import {defineMessages, FormattedMessage, useIntl} from 'react-intl';
@@ -131,14 +132,29 @@ const ConfirmationPrompt = ({
     const modalRef = useRef(null);
     const [modalPositionValues, setModalPositionValues] = React.useState({});
 
-    const onModalMount = useCallback(el => {
-        if (!el) return;
-        modalRef.current = el;
-
-        if (isOpen && relativeElemRef.current) {
+    const updatePosition = useCallback(() => {
+        if (relativeElemRef.current && modalRef.current) {
             const pos = calculateModalPosition(relativeElemRef, modalRef, modalPosition);
             setModalPositionValues(pos);
         }
+    }, [relativeElemRef, modalPosition]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const debouncedUpdate = debounce(updatePosition, 50, {leading: true});
+
+        debouncedUpdate();
+
+        window.addEventListener('resize', debouncedUpdate);
+        return () => window.removeEventListener('resize', debouncedUpdate);
+    }, [isOpen, relativeElemRef, modalPosition]);
+
+    const onModalMount = useCallback(el => {
+        if (!el || !isOpen) return;
+        modalRef.current = el;
+
+        updatePosition();
     }, [isOpen, relativeElemRef, modalPosition]);
 
     return (
@@ -224,7 +240,7 @@ ConfirmationPrompt.propTypes = {
     cancelLabel: PropTypes.string,
     onConfirm: PropTypes.func.isRequired,
     onCancel: PropTypes.func.isRequired,
-    relativeElemRef: PropTypes.object.isRequired,
+    relativeElemRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}),
     modalPosition: PropTypes.oneOf([
         'left',
         'right',

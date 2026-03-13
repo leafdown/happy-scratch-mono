@@ -543,6 +543,7 @@ const GUIComponent = props => {
                                 manuallySaveThumbnails={manuallySaveThumbnails}
                                 onUpdateProjectThumbnail={onUpdateProjectThumbnail}
                                 isInEditor
+                                isOwner={canSave}
                             />
                             <Box
                                 className={styles.targetWrapper}
