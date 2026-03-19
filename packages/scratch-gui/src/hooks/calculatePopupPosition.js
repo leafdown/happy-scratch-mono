@@ -11,7 +11,7 @@ const useCalculatePopupPosition = ({
     spaceForArrow,
     arrowShortSide,
     arrowLongSide,
-    arrowOffsetFromEnd,
+    counterOffset = 5,
     arrowOffsetFromBottom = 0
 }) => {
     const modalHeight = popupRef.current.getBoundingClientRect().height;
@@ -49,9 +49,9 @@ const useCalculatePopupPosition = ({
     case 'up':
     case 'down':
         if (secondaryPosition === 'left') {
-            left = (buttonRect.left + buttonRect.width) - popupWidth + arrowOffsetFromEnd;
+            left = (buttonRect.left + buttonRect.width) - popupWidth + counterOffset;
         } else if (secondaryPosition === 'right') {
-            left = buttonRect.left - arrowOffsetFromEnd;
+            left = buttonRect.left - counterOffset;
         } else {
             left = buttonRect.left + ((buttonRect.width - popupWidth) / 2);
         }
@@ -60,9 +60,9 @@ const useCalculatePopupPosition = ({
     case 'left':
     case 'right':
         if (secondaryPosition === 'up') {
-            top = (buttonRect.top + buttonRect.height) - modalHeight - arrowOffsetFromEnd;
+            top = (buttonRect.top + buttonRect.height) - modalHeight - counterOffset;
         } else if (secondaryPosition === 'down') {
-            top = buttonRect.top - arrowOffsetFromEnd;
+            top = buttonRect.top - counterOffset;
         } else {
             top = buttonRect.top + ((buttonRect.height - modalHeight) / 2);
         }

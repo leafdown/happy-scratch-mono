@@ -9,11 +9,11 @@ import arrowDownIcon from './icon--arrow-down.svg';
 import arrowUpIcon from './icon--arrow-up.svg';
 import Box from '../box/box';
 
-const arrowWidth = 28;
-const arrowHeight = 8;
-const arrowOffsetFromEnd = 2;
-const arrowOffsetFromBottom = 2;
-const spaceForArrow = 12;
+const defaultArrowWidth = 28;
+const defaultArrowHeight = 8;
+const defaultCounterOffset = 2;
+const defaultArrowOffsetFromBottom = 2;
+const defaultSpaceForArrow = 12;
 const defaultTooltipWidth = 336;
 
 const Tooltip = ({
@@ -26,7 +26,12 @@ const Tooltip = ({
     secondaryPosition,
     title,
     body,
-    width
+    width = defaultTooltipWidth,
+    spaceForArrow = defaultSpaceForArrow,
+    arrowOffsetFromBottom = defaultArrowOffsetFromBottom,
+    counterOffset = defaultCounterOffset,
+    arrowHeight = defaultArrowHeight,
+    arrowWidth = defaultArrowWidth
 }) => {
     const tooltipRef = useRef(null);
     const [pos, setPos] = useState({top: 0, left: 0, arrowTop: 0, arrowLeft: 0, arrowIcon: null});
@@ -38,13 +43,13 @@ const Tooltip = ({
             popupRef: tooltipRef,
             primaryPosition,
             secondaryPosition,
-            popupWidth: width ?? defaultTooltipWidth,
+            popupWidth: width,
             arrowLeftIcon,
             arrowRightIcon,
             arrowUpIcon,
             arrowDownIcon,
             spaceForArrow,
-            arrowOffsetFromEnd,
+            counterOffset,
             arrowOffsetFromBottom,
             arrowShortSide: arrowHeight,
             arrowLongSide: arrowWidth
@@ -188,7 +193,12 @@ Tooltip.propTypes = {
     secondaryPosition: PropTypes.oneOf(['up', 'down', 'left', 'right']),
     title: PropTypes.node,
     body: PropTypes.node.isRequired,
-    width: PropTypes.number
+    width: PropTypes.number,
+    spaceForArrow: PropTypes.number,
+    arrowOffsetFromBottom: PropTypes.number,
+    counterOffset: PropTypes.number,
+    arrowHeight: PropTypes.number,
+    arrowWidth: PropTypes.number
 };
 
 export default Tooltip;

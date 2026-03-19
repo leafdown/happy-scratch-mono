@@ -20,8 +20,8 @@ body .alert {
 }
 
 .alert.warn {
-    background: #FFF0DF;
-    border: 1px solid #FF8C1A;
+    background: $ui-white;
+    border: 1px solid $data-primary;
     box-shadow: 0px 0px 0px 2px rgba(255, 140, 26, 0.25);
 }
 
@@ -31,8 +31,8 @@ body .alert {
     box-shadow: 0px 0px 0px 2px $extensions-light;
 }
 
-.alert.blue {
-    border: 1px solid #4C97FF;
+.alert.info-blue {
+    border: 1px solid $motion-primary;
     background: #E4F0FF;
 }
 
@@ -82,7 +82,7 @@ body .alert {
     width: 6.5rem;
     padding: 0.55rem 0.9rem;
     border-radius: 0.35rem;
-    background: #FF8C1A;
+    background: $data-primary;
     color: white;
     font-weight: 700;
     font-size: 0.77rem;

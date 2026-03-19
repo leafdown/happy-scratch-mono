@@ -50,7 +50,10 @@ ButtonComponent.propTypes = {
     iconClassName: PropTypes.string,
     iconSrc: PropTypes.string,
     onClick: PropTypes.func,
-    componentRef: PropTypes.func
+    componentRef: PropTypes.oneOfType([
+        PropTypes.func,
+        PropTypes.shape({current: PropTypes.instanceOf(Element)})
+    ])
 };
 
 export default ButtonComponent;

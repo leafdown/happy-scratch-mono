@@ -27,11 +27,11 @@ const messages = defineMessages({
     }
 });
 
-const modalWidth = 200;
-const spaceForArrow = 16;
-const arrowOffsetFromEnd = 7;
-const arrowLongSide = 29;
-const arrowShortSide = 13;
+const defaultModalWidth = 200;
+const defaultSpaceForArrow = 16;
+const defaultCounterOffset = 7;
+const defaultArrowLongSide = 29;
+const defaultArrowShortSide = 13;
 
 const ConfirmationPrompt = ({
     title,
@@ -43,7 +43,12 @@ const ConfirmationPrompt = ({
     isOpen,
     relativeElementRef,
     primaryPosition,
-    secondaryPosition
+    secondaryPosition,
+    modalWidth = defaultModalWidth,
+    spaceForArrow = defaultSpaceForArrow,
+    counterOffset = defaultCounterOffset,
+    arrowLongSide = defaultArrowLongSide,
+    arrowShortSide = defaultArrowShortSide
 }) => {
     const intl = useIntl();
 
@@ -63,7 +68,7 @@ const ConfirmationPrompt = ({
                 arrowUpIcon,
                 arrowDownIcon,
                 spaceForArrow,
-                arrowOffsetFromEnd,
+                counterOffset,
                 arrowShortSide,
                 arrowLongSide
             });
@@ -79,15 +84,18 @@ const ConfirmationPrompt = ({
         debouncedUpdate();
 
         window.addEventListener('resize', debouncedUpdate);
-        return () => window.removeEventListener('resize', debouncedUpdate);
-    }, [isOpen, relativeElementRef, primaryPosition, secondaryPosition]);
+        return () => {
+            window.removeEventListener('resize', debouncedUpdate);
+            debouncedUpdate.cancel();
+        };
+    }, [isOpen, updatePosition]);
 
     const onModalMount = useCallback(el => {
         if (!el || !isOpen) return;
         modalRef.current = el;
 
         updatePosition();
-    }, [isOpen, relativeElementRef, primaryPosition, secondaryPosition]);
+    }, [isOpen, updatePosition]);
 
     return (
         isOpen && (
@@ -105,7 +113,7 @@ const ConfirmationPrompt = ({
                         backgroundColor: 'transparent',
                         padding: 0,
                         margin: 0,
-                        position: 'absolute',
+                        position: 'fixed',
                         overflowX: 'hidden',
                         zIndex: 1000
                     },
@@ -123,6 +131,8 @@ const ConfirmationPrompt = ({
                 {modalPositionValues.arrowIcon && (
                     <img
                         src={modalPositionValues.arrowIcon}
+                        alt=""
+                        aria-hidden="true"
                         style={{
                             position: 'fixed',
                             top: modalPositionValues.arrowTop,
@@ -184,7 +194,12 @@ ConfirmationPrompt.propTypes = {
         'right',
         'up',
         'down'
-    ])
+    ]),
+    modalWidth: PropTypes.number,
+    spaceForArrow: PropTypes.number,
+    counterOffset: PropTypes.number,
+    arrowLongSide: PropTypes.number,
+    arrowShortSide: PropTypes.number
 };
 
 export default ConfirmationPrompt;

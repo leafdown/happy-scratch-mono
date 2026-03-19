@@ -13,7 +13,7 @@ const AlertTypes = keyMirror({
 
 const AlertLevels = {
     SUCCESS: 'success',
-    BLUE: 'blue',
+    INFO_BLUE: 'info-blue',
     INFO: 'info',
     WARN: 'warn'
 };
@@ -244,7 +244,7 @@ const alerts = [
             />
         ),
         iconSpinner: true,
-        level: AlertLevels.BLUE
+        level: AlertLevels.INFO_BLUE
     },
     {
         alertId: 'thumbnailSuccess',
@@ -259,7 +259,7 @@ const alerts = [
         ),
         iconURL: successImage,
         level: AlertLevels.SUCCESS,
-        maxDisplaySecs: 3
+        maxDisplaySecs: 5
     },
     {
         alertId: 'thumbnailError',
@@ -274,7 +274,7 @@ const alerts = [
         ),
         iconURL: failImage,
         level: AlertLevels.WARN,
-        maxDisplaySecs: 3
+        maxDisplaySecs: 5
     }
 ];
 

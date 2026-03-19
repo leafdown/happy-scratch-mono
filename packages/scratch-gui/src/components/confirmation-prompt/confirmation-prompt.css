@@ -3,25 +3,25 @@
 
 .modal-container {
     display: flex;
-    width: 200px;
-    padding: 12px;
+    width: 12.5rem;
+    padding: 0.75rem;
     flex-direction: column;
     align-items: flex-start;
-    border-radius: 8px;
-    background: #855CD6;
-    gap: 15px;
+    border-radius: 0.5rem;
+    background: $looks-secondary;
+    gap: 0.9375rem;
     box-sizing: border-box;
 }
 
 .label {
     align-self: stretch;
-    color: var(--White-White, #FFF);
+    color: $ui-white;
     text-align: center;
     font-family: "Helvetica Neue";
-    font-size: 16px;
+    font-size: 1rem;
     font-style: normal;
     font-weight: 700;
-    line-height: 24px;
+    line-height: 1.5rem;
 }
 
 .button-row {
@@ -34,12 +34,12 @@
 .button-row button {
     all: unset;
     display: flex;
-    padding: 8px 16px;
+    padding: 0.5rem 1rem;
     justify-content: center;
     align-items: center;
-    gap: 8px;
-    flex: 1 0 0;
-    border-radius: 40px;
+    gap: 0.5rem;
+    flex: 1;
+    border-radius: 2.5rem;
     background: inherit;
     cursor: pointer;
 }
@@ -49,22 +49,22 @@
 }
 
 .button-row button span {
-    color: var(--white-white-100, #FFF);
+    color: $ui-white;
     font-family: "Helvetica Neue";
-    font-size: 12px;
+    font-size: 0.75rem;
     font-style: normal;
     font-weight: 700;
-    line-height: 16px;
+    line-height: 1rem;
 }
 
 .button-row button.confirm-button {
-    background: var(--White-White, #FFF);
+    background: $ui-white;
 }
 
 .button-row button.confirm-button span {
-    color: var(--Looks-Purple-2, #855CD6);
+    color: $looks-secondary;
 }
 
 .button-row button.cancel-button {
-    border: 1px solid var(--white-white-100, #FFF);
+    border: 0.0625rem solid $ui-white;
 }

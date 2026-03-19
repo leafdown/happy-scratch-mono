@@ -1,39 +1,40 @@
+@import "../../css/colors.css";
+
 .tooltip {
     display: flex;
     flex-direction: column;
-    width: 336px;
-    padding: 16px;
+    width: 21rem;
+    padding: 1rem;
     align-items: flex-start;
-    gap: -1px;
+    gap: -0.0625rem;
 
-    border-radius: 8px;
-    border: 1px solid #4C97FF;
-    background-color: #4C97FF;
+    border-radius: 0.5rem;
+    border: 0.0625rem solid $motion-primary;
+    background-color: $motion-primary;
     opacity: 1 !important;
 
     /* Basic Shadows/2dp */
-    box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.06), 0 4px 16px 0 rgba(0, 0, 0, 0.12);
+    box-shadow: 0 0.25rem 0.375rem 0 $ui-black-transparent-10, 0 0.25rem 1rem 0 $ui-black-transparent;
 }
 
 .tooltip-title {
     align-self: stretch;
-    color: var(--White-White, #FFF);
+    color: $ui-white;
     font-family: "Helvetica Neue";
-    font-size: 16px;
+    font-size: 1rem;
     font-style: normal;
     font-weight: 700;
-    line-height: 24px;
+    line-height: 1.5rem;
 }
 
 .tooltip-body {
     align-self: stretch;
-
-    color: var(--White-White, #FFF);
+    color: $ui-white;
     font-family: "Helvetica Neue";
-    font-size: 14px;
+    font-size: 0.875rem;
     font-style: normal;
     font-weight: 400;
-    line-height: 20px;
+    line-height: 1.25rem;
 }
 
 .tooltip-arrow {

@@ -100,6 +100,10 @@ const getIsShowingWithId = loadingState => (
 const getIsShowingWithoutId = loadingState => (
     loadingState === LoadingState.SHOWING_WITHOUT_ID
 );
+const getIsProjectLoadedWithId = loadingState => (
+    getIsShowingWithId(loadingState) ||
+    getIsUpdating(loadingState)
+);
 const getIsError = loadingState => (
     loadingState === LoadingState.ERROR
 );
@@ -528,6 +532,7 @@ export {
     getIsShowingProject,
     getIsShowingWithId,
     getIsShowingWithoutId,
+    getIsProjectLoadedWithId,
     getIsUpdating,
     manualUpdateProject,
     onFetchedProjectData,

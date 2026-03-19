@@ -96,12 +96,11 @@ const StageHeaderComponent = function (props) {
         showBranding,
         stageSizeMode,
         vm,
-        isInEditor,
         isProjectLoaded,
         userOwnsProject,
-        showThumbnailSetting,
-        showThumbnailSuccess,
-        showThumbnailError
+        onShowSettingThumbnail,
+        onShowThumbnailSuccess,
+        onShowThumbnailError
     } = props;
     const intl = useIntl();
 
@@ -116,11 +115,11 @@ const StageHeaderComponent = function (props) {
 
     // To remove - new feature awareness tooltip
     useEffect(() => {
-        if (manuallySaveThumbnails && isInEditor && isProjectLoaded &&
+        if (manuallySaveThumbnails && isProjectLoaded &&
             userOwnsProject && thumbnailButtonRef.current) {
             setIsThumbnailTooltipOpen(true);
         }
-    }, [manuallySaveThumbnails, isInEditor, isProjectLoaded, userOwnsProject]);
+    }, [manuallySaveThumbnails, isProjectLoaded, userOwnsProject]);
 
     const onUpdateThumbnail = useCallback(
         throttle(
@@ -128,14 +127,14 @@ const StageHeaderComponent = function (props) {
                 if (!onUpdateProjectThumbnail) return;
 
                 setIsUpdatingThumbnail(true);
-                showThumbnailSetting();
+                onShowSettingThumbnail();
 
-                storeProjectThumbnail(vm, dataURI => {
+                storeProjectThumbnail(vm, async dataURI => {
                     try {
-                        onUpdateProjectThumbnail(projectId, dataURItoBlob(dataURI)).then();
-                        showThumbnailSuccess();
+                        await onUpdateProjectThumbnail(projectId, dataURItoBlob(dataURI));
+                        onShowThumbnailSuccess();
                     } catch (e) {
-                        showThumbnailError();
+                        onShowThumbnailError();
                     } finally {
                         setIsUpdatingThumbnail(false);
                     }
@@ -143,7 +142,13 @@ const StageHeaderComponent = function (props) {
             },
             3000
         ),
-        [onUpdateProjectThumbnail, projectId, showThumbnailSetting, showThumbnailSuccess, showThumbnailError, vm]
+        [
+            onUpdateProjectThumbnail,
+            projectId,
+            onShowSettingThumbnail,
+            onShowThumbnailSuccess,
+            onShowThumbnailError
+        ]
     );
 
     const onThumbnailPromptOpen = useCallback(() => {
@@ -260,9 +265,8 @@ const StageHeaderComponent = function (props) {
                                 />
                             }
                         />
-                        {manuallySaveThumbnails && isInEditor && isProjectLoaded && userOwnsProject && (
+                        {manuallySaveThumbnails && isProjectLoaded && userOwnsProject && (
                             <Button
-                                aria-label={intl.formatMessage(messages.setThumbnail)}
                                 title={intl.formatMessage(messages.setThumbnail)}
                                 className={classNames(
                                     styles.stageButton,
@@ -315,24 +319,6 @@ const StageHeaderComponent = function (props) {
     return header;
 };
 
-const mapStateToProps = state => {
-    const projectState = state.scratchGui.projectState;
-    const loadingState = projectState.loadingState;
-
-    return {
-        projectId: projectState.projectId,
-        // This is the button's mode, as opposed to the actual current state
-        stageSizeMode: state.scratchGui.stageSize.stageSize,
-        isProjectLoaded: getIsShowingWithId(loadingState) || getIsUpdating(loadingState)
-    };
-};
-
-const mapDispatchToProps = dispatch => ({
-    showThumbnailSetting: () => dispatch(showStandardAlert('settingThumbnail')),
-    showThumbnailSuccess: () => showAlertWithTimeout(dispatch, 'thumbnailSuccess'),
-    showThumbnailError: () => showAlertWithTimeout(dispatch, 'thumbnailError')
-});
-
 StageHeaderComponent.propTypes = {
     isFullScreen: PropTypes.bool.isRequired,
     isPlayerOnly: PropTypes.bool.isRequired,
@@ -347,9 +333,8 @@ StageHeaderComponent.propTypes = {
     showBranding: PropTypes.bool.isRequired,
     stageSizeMode: PropTypes.oneOf(Object.keys(STAGE_SIZE_MODES)),
     vm: PropTypes.instanceOf(VM).isRequired,
-    isInEditor: PropTypes.bool,
     isProjectLoaded: PropTypes.bool,
-    userOwnsProject: PropTypes.bool.isRequired,
+    userOwnsProject: PropTypes.bool,
     showThumbnailSetting: PropTypes.func,
     showThumbnailSuccess: PropTypes.func,
     showThumbnailError: PropTypes.func
@@ -357,7 +342,7 @@ StageHeaderComponent.propTypes = {
 
 StageHeaderComponent.defaultProps = {
     stageSizeMode: STAGE_SIZE_MODES.large,
-    isInEditor: false
+    userOwnsProject: false
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(StageHeaderComponent);
+export default StageHeaderComponent;

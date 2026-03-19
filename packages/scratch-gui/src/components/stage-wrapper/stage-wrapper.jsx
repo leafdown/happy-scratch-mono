@@ -21,7 +21,6 @@ const StageWrapperComponent = function (props) {
         loading,
         manuallySaveThumbnails,
         onUpdateProjectThumbnail,
-        isInEditor,
         userOwnsProject,
         stageSize,
         vm
@@ -41,7 +40,6 @@ const StageWrapperComponent = function (props) {
             <Box className={styles.stageMenuWrapper}>
                 <StageHeader
                     manuallySaveThumbnails={manuallySaveThumbnails}
-                    isInEditor={isInEditor}
                     userOwnsProject={userOwnsProject}
                     onUpdateProjectThumbnail={onUpdateProjectThumbnail}
                     stageSize={stageSize}
@@ -73,7 +71,6 @@ StageWrapperComponent.propTypes = {
     isRtl: PropTypes.bool.isRequired,
     loading: PropTypes.bool,
     manuallySaveThumbnails: PropTypes.bool,
-    isInEditor: PropTypes.bool,
     userOwnsProject: PropTypes.bool,
     onUpdateProjectThumbnail: PropTypes.func,
     stageSize: PropTypes.oneOf(Object.keys(STAGE_DISPLAY_SIZES)).isRequired,
