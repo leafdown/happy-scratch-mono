@@ -9,10 +9,10 @@ import arrowLeftIcon from './icon--arrow-left.svg';
 import arrowRightIcon from './icon--arrow-right.svg';
 
 import Box from '../box/box.jsx';
-import PopupWithArrow from '../popup-with-arrow/popup-with-arrow.jsx';
+import ModalWithArrow from '../modal-with-arrow/modal-with-arrow.jsx';
 
 const defaultConfig = {
-    width: 336,
+    modalWidth: 336,
     spaceForArrow: 12,
     arrowOffsetFromBottom: 2,
     counterOffset: 2,
@@ -27,17 +27,9 @@ const arrowConfig = {
     arrowRightIcon
 };
 
-const FeatureCalloutContent = ({popupRef, pos, width, title, body}) => (
+const FeatureCalloutContent = ({title, body}) => (
     <Box
-        componentRef={popupRef}
         className={styles.popover}
-        style={{
-            top: pos.top,
-            left: pos.left,
-            width,
-            zIndex: 1000,
-            position: 'fixed'
-        }}
         tabIndex={0}
         role="tooltip"
     >
@@ -51,17 +43,6 @@ const FeatureCalloutContent = ({popupRef, pos, width, title, body}) => (
 );
 
 FeatureCalloutContent.propTypes = {
-    popupRef: PropTypes.oneOfType([
-        PropTypes.func,
-        PropTypes.shape({current: PropTypes.instanceOf(Element)})
-    ]).isRequired,
-    pos: PropTypes.shape({
-        top: PropTypes.number,
-        left: PropTypes.number,
-        arrowTop: PropTypes.number,
-        arrowLeft: PropTypes.number
-    }).isRequired,
-    width: PropTypes.number.isRequired,
     title: PropTypes.node,
     body: PropTypes.node.isRequired
 };
@@ -77,7 +58,7 @@ const FeatureCalloutPopover = ({
     layoutConfig
 }) => {
     const {
-        width,
+        modalWidth,
         spaceForArrow,
         counterOffset,
         arrowOffsetFromBottom,
@@ -86,14 +67,14 @@ const FeatureCalloutPopover = ({
     } = {...defaultConfig, ...layoutConfig};
 
     const memoizedLayoutConfig = useMemo(() => ({
-        popupWidth: width,
+        modalWidth,
         spaceForArrow,
         counterOffset,
         arrowOffsetFromBottom,
         arrowHeight,
         arrowWidth
     }), [
-        width,
+        modalWidth,
         spaceForArrow,
         counterOffset,
         arrowOffsetFromBottom,
@@ -102,7 +83,7 @@ const FeatureCalloutPopover = ({
     ]);
 
     return (
-        <PopupWithArrow
+        <ModalWithArrow
             isOpen={isOpen}
             onRequestClose={onRequestClose}
             relativeElementRef={targetRef}
@@ -111,16 +92,11 @@ const FeatureCalloutPopover = ({
             layoutConfig={memoizedLayoutConfig}
             arrowConfig={arrowConfig}
         >
-            {({popupRef, pos}) => (
-                <FeatureCalloutContent
-                    popupRef={popupRef}
-                    pos={pos}
-                    width={width}
-                    title={title}
-                    body={body}
-                />
-            )}
-        </PopupWithArrow>
+            <FeatureCalloutContent
+                title={title}
+                body={body}
+            />
+        </ModalWithArrow>
     );
 };
 

@@ -1,10 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import ReactModal from 'react-modal';
 import {defineMessages, FormattedMessage} from 'react-intl';
 
 import Box from '../box/box.jsx';
-import PopupWithArrow from '../popup-with-arrow/popup-with-arrow.jsx';
+import ModalWithArrow from '../modal-with-arrow/modal-with-arrow.jsx';
 
 import arrowDownIcon from './icon--arrow-down.svg';
 import arrowUpIcon from './icon--arrow-up.svg';
@@ -66,7 +65,7 @@ const ConfirmationPrompt = ({
     } = {...defaultConfig, ...layoutConfig};
 
     const memoizedLayoutConfig = React.useMemo(() => ({
-        popupWidth: modalWidth,
+        modalWidth,
         spaceForArrow,
         counterOffset,
         arrowOffsetFromBottom,
@@ -81,69 +80,36 @@ const ConfirmationPrompt = ({
     ]);
 
     return (
-        <PopupWithArrow
+        <ModalWithArrow
             isOpen={isOpen}
             relativeElementRef={relativeElementRef}
+            onRequestClose={onCancel}
             side={side}
             align={align}
             layoutConfig={memoizedLayoutConfig}
             arrowConfig={arrowConfig}
+            title={title}
         >
-            {({popupRef, pos}) => (
-                <ReactModal
-                    isOpen
-                    onRequestClose={onCancel}
-                    contentLabel={title}
-                    style={{
-                        content: {
-                            top: pos.top,
-                            left: pos.left,
-                            width: modalWidth,
-                            border: 'none',
-                            height: 'fit-content',
-                            backgroundColor: 'transparent',
-                            padding: 0,
-                            margin: 0,
-                            position: 'fixed',
-                            overflowX: 'hidden',
-                            zIndex: 1000
-                        },
-                        overlay: {
-                            position: 'fixed',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            zIndex: 510,
-                            backgroundColor: 'transparent'
-                        }
-                    }}
-                >
-                    <Box
-                        className={styles.modalContainer}
-                        componentRef={popupRef}
+            <Box className={styles.modalContainer}>
+                <Box className={styles.label}>
+                    {message}
+                </Box>
+                <Box className={styles.buttonRow}>
+                    <button
+                        onClick={onCancel}
+                        className={styles.cancelButton}
                     >
-                        <Box className={styles.label}>
-                            {message}
-                        </Box>
-                        <Box className={styles.buttonRow}>
-                            <button
-                                onClick={onCancel}
-                                className={styles.cancelButton}
-                            >
-                                {cancelLabel ?? <FormattedMessage {...messages.defaultCancelLabel} />}
-                            </button>
-                            <button
-                                onClick={onConfirm}
-                                className={styles.confirmButton}
-                            >
-                                {confirmLabel ?? <FormattedMessage {...messages.defaultConfirmLabel} />}
-                            </button>
-                        </Box>
-                    </Box>
-                </ReactModal>
-            )}
-        </PopupWithArrow>
+                        {cancelLabel ?? <FormattedMessage {...messages.defaultCancelLabel} />}
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        className={styles.confirmButton}
+                    >
+                        {confirmLabel ?? <FormattedMessage {...messages.defaultConfirmLabel} />}
+                    </button>
+                </Box>
+            </Box>
+        </ModalWithArrow>
     );
 };
 

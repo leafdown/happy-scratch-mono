@@ -106,14 +106,6 @@ const StageHeaderComponent = function (props) {
     const [isThumbnailTooltipOpen, setIsThumbnailTooltipOpen] = useState(false);
     const [isUpdatingThumbnail, setIsUpdatingThumbnail] = useState(false);
 
-    // To remove - new feature awareness tooltip
-    useEffect(() => {
-        if (manuallySaveThumbnails && isProjectLoaded &&
-            userOwnsProject && thumbnailButtonRef.current) {
-            setIsThumbnailTooltipOpen(true);
-        }
-    }, [manuallySaveThumbnails, isProjectLoaded, userOwnsProject]);
-
     const onUpdateThumbnail = useCallback(
         throttle(() => {
             if (!onUpdateProjectThumbnail) return;

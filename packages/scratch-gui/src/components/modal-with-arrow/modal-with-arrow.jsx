@@ -1,8 +1,10 @@
 import React, {useRef, useState, useCallback, useEffect} from 'react';
 import PropTypes from 'prop-types';
 import calculatePopupPosition, {PopupAlign, PopupSide} from '../../lib/calculatePopupPosition';
+import ReactModal from 'react-modal';
+import styles from './modal-with-arrow.css';
 
-const PopupWithArrow = ({
+const ModalWithArrow = ({
     isOpen,
     onRequestClose,
     relativeElementRef,
@@ -10,9 +12,12 @@ const PopupWithArrow = ({
     align,
     layoutConfig,
     arrowConfig,
+    modalContentStyle,
+    modalOverlayStyle,
+    title,
     children
 }) => {
-    const popupRef = useRef(null);
+    const modalRef = useRef(null);
     const [pos, setPos] = useState({top: 0, left: 0, arrowTop: 0, arrowLeft: 0});
 
     const SIDE_TO_ARROW_ICON = {
@@ -23,7 +28,7 @@ const PopupWithArrow = ({
     };
 
     const {
-        popupWidth,
+        modalWidth,
         spaceForArrow,
         counterOffset,
         arrowOffsetFromBottom,
@@ -37,13 +42,13 @@ const PopupWithArrow = ({
             [arrowWidth, arrowHeight] : [arrowHeight, arrowWidth];
 
     const updatePosition = useCallback(() => {
-        if (!relativeElementRef?.current || !popupRef.current) return;
+        if (!relativeElementRef?.current || !modalRef.current) return;
         const newPos = calculatePopupPosition({
             relativeElementRef,
-            popupRef,
+            popupRef: modalRef,
             side,
             align,
-            popupWidth,
+            popupWidth: modalWidth,
             spaceForArrow,
             counterOffset,
             arrowOffsetFromBottom,
@@ -55,7 +60,7 @@ const PopupWithArrow = ({
         relativeElementRef,
         side,
         align,
-        popupWidth,
+        modalWidth,
         spaceForArrow,
         counterOffset,
         arrowOffsetFromBottom,
@@ -74,48 +79,34 @@ const PopupWithArrow = ({
         };
     }, [isOpen, updatePosition]);
 
-    // Update position when isOpen changes
-    useEffect(() => {
-        if (isOpen && popupRef.current && relativeElementRef?.current) {
-            updatePosition();
-        }
-    }, [isOpen, relativeElementRef, updatePosition]);
-
-    // Click outside to close
-    useEffect(() => {
-        if (!isOpen || !onRequestClose) return;
-
-        const handleClickOutside = event => {
-            const isOutsideTooltip = popupRef.current &&
-                !popupRef.current.contains(event.target);
-            
-            if (isOutsideTooltip) {
-                onRequestClose();
-            }
-        };
-
-        // The Blockly workspace suppresses compat events like `mouseup`.
-        // Listen for `pointerup` instead.
-        document.addEventListener('pointerup', handleClickOutside);
-        return () => {
-            document.removeEventListener('pointerup', handleClickOutside);
-        };
-    }, [isOpen, onRequestClose]);
-
     const onPopupMount = useCallback(el => {
         if (!el || !isOpen) return;
-        popupRef.current = el;
+        modalRef.current = el;
         updatePosition();
     }, [isOpen, updatePosition]);
-
+    
     if (!isOpen) return null;
 
     return (
         <>
-            {children({
-                popupRef: onPopupMount,
-                pos
-            })}
+            <ReactModal
+                isOpen
+                onRequestClose={onRequestClose}
+                contentLabel={title}
+                className={modalContentStyle}
+                overlayClassName={modalOverlayStyle}
+                onAfterOpen={updatePosition}
+                contentRef={onPopupMount}
+                style={{
+                    content: {
+                        top: pos.top,
+                        left: pos.left,
+                        width: modalWidth
+                    }
+                }}
+            >
+                {children}
+            </ReactModal>
             {arrowIcon && (
                 <img
                     src={arrowIcon}
@@ -131,21 +122,20 @@ const PopupWithArrow = ({
                         border: 'none',
                         backgroundColor: 'transparent'
                     }}
-                    
                 />
             )}
         </>
     );
 };
 
-PopupWithArrow.propTypes = {
+ModalWithArrow.propTypes = {
     isOpen: PropTypes.bool.isRequired,
     onRequestClose: PropTypes.func,
     relativeElementRef: PropTypes.shape({current: PropTypes.instanceOf(Element)}).isRequired,
     side: PropTypes.oneOf(Object.values(PopupSide)).isRequired,
     align: PropTypes.oneOf(Object.values(PopupAlign)),
     layoutConfig: PropTypes.shape({
-        popupWidth: PropTypes.number.isRequired,
+        modalWidth: PropTypes.number.isRequired,
         spaceForArrow: PropTypes.number.isRequired,
         counterOffset: PropTypes.number,
         arrowOffsetFromBottom: PropTypes.number,
@@ -158,13 +148,17 @@ PopupWithArrow.propTypes = {
         arrowLeftIcon: PropTypes.string,
         arrowRightIcon: PropTypes.string
     }).isRequired,
-    children: PropTypes.func.isRequired
+    children: PropTypes.func.isRequired,
+    modalContentStyle: PropTypes.string,
+    modalOverlayStyle: PropTypes.string,
+    title: PropTypes.string
 };
 
-PopupWithArrow.defaultProps = {
+ModalWithArrow.defaultProps = {
     align: PopupAlign.CENTER,
     onRequestClose: null,
-    asModal: false
+    modalContentStyle: styles.modalContent,
+    modalOverlayStyle: styles.modalOverlay
 };
 
-export default PopupWithArrow;
+export default ModalWithArrow;
