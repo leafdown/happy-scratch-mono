@@ -6,7 +6,7 @@ class CloudProvider {
     private username: string | null = null;
     private projectId: string | null = null;
     private cloudHost: string;
-    private readAuth: () => Promise<string | null | undefined>;
+    private readAuth?: () => Promise<string | null | undefined>;
 
     private connection: WebSocket | null = null;
     private connectionAttempts: number;
@@ -23,14 +23,14 @@ class CloudProvider {
      * @param {VirtualMachine} vm The Scratch virtual machine to interface with
      * @param {string} username The username to associate cloud data updates with
      * @param {string} projectId The id associated with the project containing
-     * @param {() => Promise<string | null | undefined>} readAuth A function to get an auth token
+     * @param {null | undefined | () => Promise<string | null | undefined>} readAuth A function to get an auth token
      */
     constructor (
         cloudHost: string,
         vm: unknown,
         username: string,
         projectId: string,
-        readAuth: () => Promise<string | null | undefined> = () => Promise.resolve(null)
+        readAuth?: () => Promise<string | null | undefined>
     ) {
         this.vm = vm;
         this.username = username;
@@ -62,24 +62,33 @@ class CloudProvider {
     openConnection () {
         this.connectionAttempts += 1;
 
-        const authPromise = this.readAuth ? this.readAuth() : Promise.resolve(null);
-        authPromise.then(token => {
-            // See https://stackoverflow.com/questions/4361173/http-headers-in-websockets-client-api
-            const protocols = token ? [`bearer!${token}`] : [];
+        const authPromise = this.readAuth ? this.readAuth() : null;
 
-            try {
-                this.connection = new WebSocket((location.protocol === 'http:' ? 'ws://' : 'wss://') + this.cloudHost, protocols);
-            } catch (e) {
-                log.warn('Websocket support is not available in this browser', e);
-                this.connection = null;
-                return;
-            }
+        if (authPromise) {
+            authPromise.then(token => {
+                this.connectWithToken(token);
+            }).catch(error => log.error('Could not read auth for clouddata', error));
+        } else {
+            this.connectWithToken(null);
+        }
+    }
 
-            this.connection.onerror = this.onError.bind(this);
-            this.connection.onmessage = this.onMessage.bind(this);
-            this.connection.onopen = this.onOpen.bind(this);
-            this.connection.onclose = this.onClose.bind(this);
-        }).catch(error => log.error('Could not read auth for clouddata', error));
+    private connectWithToken (token: string | null | undefined) {
+        // See https://stackoverflow.com/questions/4361173/http-headers-in-websockets-client-api
+        const protocols = token ? [`bearer!${token}`] : [];
+
+        try {
+            this.connection = new WebSocket((location.protocol === 'http:' ? 'ws://' : 'wss://') + this.cloudHost, protocols);
+        } catch (e) {
+            log.warn('Websocket support is not available in this browser', e);
+            this.connection = null;
+            return;
+        }
+
+        this.connection.onerror = this.onError.bind(this);
+        this.connection.onmessage = this.onMessage.bind(this);
+        this.connection.onopen = this.onOpen.bind(this);
+        this.connection.onclose = this.onClose.bind(this);
     }
 
     onError (event) {
