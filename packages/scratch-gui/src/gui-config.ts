@@ -142,7 +142,12 @@ export interface GUICloudVariableConfig {
      * @param username The username
      * @param projectId The project id
      */
-    createProvider(cloudHost: string, vm: VirtualMachine, username: string, projectId: string): GUICloudVariableProvider;
+    createProvider(
+        cloudHost: string,
+        vm: VirtualMachine,
+        username: string,
+        projectId: string
+    ): GUICloudVariableProvider;
 }
 
 export interface GUICloudVariableProvider {

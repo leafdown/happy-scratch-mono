@@ -65,7 +65,7 @@ class CloudProvider {
         const authPromise = this.readAuth ? this.readAuth() : Promise.resolve(null);
         authPromise.then(token => {
             // See https://stackoverflow.com/questions/4361173/http-headers-in-websockets-client-api
-            const protocols = token ? ['bearer!' + token] : [];
+            const protocols = token ? [`bearer!${token}`] : [];
 
             try {
                 this.connection = new WebSocket((location.protocol === 'http:' ? 'ws://' : 'wss://') + this.cloudHost, protocols);
@@ -135,7 +135,7 @@ class CloudProvider {
      * @param {Function} fn - The function to call after the delay (typically to reopen the connection).
      * @param {number} time - The delay time in milliseconds before attempting to reconnect.
      */
-    setTimeout (fn, time) {
+    setTimeout (fn: () => void, time: number) {
         log.info(`Reconnecting in ${(time / 1000).toFixed(1)}s, attempt ${this.connectionAttempts}`);
         this._connectionTimeout = window.setTimeout(fn, time);
     }
@@ -165,7 +165,7 @@ class CloudProvider {
         methodName: string,
         dataName?: string,
         dataValue?: string | number | null,
-        dataNewName?: string,
+        dataNewName?: string
     ) {
         const msg: any = {};
         msg.method = methodName;

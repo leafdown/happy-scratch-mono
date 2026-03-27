@@ -28,7 +28,12 @@ export class LegacyStorage implements GUIStorage {
         }
     });
     readonly cloudVariables = {
-        createProvider (cloudHost: string, vm: VirtualMachine, username: string, projectId: string): GUICloudVariableProvider {
+        createProvider (
+            cloudHost: string,
+            vm: VirtualMachine,
+            username: string,
+            projectId: string
+        ): GUICloudVariableProvider {
             return new CloudProvider(cloudHost, vm, username, projectId);
         }
     };

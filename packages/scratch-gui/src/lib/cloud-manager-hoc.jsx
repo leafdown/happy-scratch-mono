@@ -4,7 +4,6 @@ import {connect} from 'react-redux';
 import bindAll from 'lodash.bindall';
 
 import VM from '@scratch/scratch-vm';
-import CloudProvider from '../lib/cloud-provider';
 
 import {
     getIsShowingWithId
@@ -13,7 +12,7 @@ import {
 import {
     showAlertWithTimeout
 } from '../reducers/alerts';
-import { GUIStoragePropType } from '../gui-config';
+import {GUIStoragePropType} from '../gui-config';
 
 /*
  * Higher Order Component to manage the connection to the cloud server.
@@ -63,7 +62,14 @@ const cloudManagerHOC = function (WrappedComponent) {
             this.disconnectFromCloud();
         }
         canUseCloud (props) {
-            return !!(props.storage.cloudVariables && props.cloudHost && props.username && props.vm && props.projectId && props.hasCloudPermission);
+            return !!(
+                props.storage.cloudVariables &&
+                props.cloudHost &&
+                props.username &&
+                props.vm &&
+                props.projectId &&
+                props.hasCloudPermission
+            );
         }
         shouldConnect (props) {
             return !this.isConnected() && this.canUseCloud(props) &&
@@ -127,14 +133,14 @@ const cloudManagerHOC = function (WrappedComponent) {
         }
         render () {
             const {
-                 
+
                 canModifyCloudData,
                 cloudHost,
                 projectId,
                 hasCloudPermission,
                 isShowingWithId,
                 onShowCloudInfo,
-                 
+
 
                 vm,
 
