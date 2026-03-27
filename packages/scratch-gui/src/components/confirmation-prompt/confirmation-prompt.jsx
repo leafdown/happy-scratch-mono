@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useMemo} from 'react';
 import PropTypes from 'prop-types';
 import {defineMessages, FormattedMessage} from 'react-intl';
 
@@ -78,7 +78,7 @@ const ConfirmationPrompt = ({
         arrowWidth
     } = {...defaultConfig, ...layoutConfig};
 
-    const memoizedLayoutConfig = React.useMemo(() => ({
+    const memoizedLayoutConfig = useMemo(() => ({
         modalWidth,
         spaceForArrow,
         counterOffset,
@@ -111,7 +111,6 @@ const ConfirmationPrompt = ({
                     className={styles.buttonIcon}
                     src={cancelButtonConfig.icon}
                     aria-hidden="true"
-                    alt=""
                 />
             )}
             {cancelButtonConfig.label ?? <FormattedMessage {...messages.defaultCancelLabel} />}
@@ -128,7 +127,6 @@ const ConfirmationPrompt = ({
                     className={styles.buttonIcon}
                     src={confirmButtonConfig.icon}
                     aria-hidden="true"
-                    alt=""
                 />
             )}
             {confirmButtonConfig.label ?? <FormattedMessage {...messages.defaultConfirmLabel} />}

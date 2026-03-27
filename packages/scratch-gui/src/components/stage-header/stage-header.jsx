@@ -113,25 +113,20 @@ const StageHeaderComponent = function (props) {
             setIsUpdatingThumbnail(true);
             onShowSettingThumbnail();
 
-            try {
-                storeProjectThumbnail(vm, dataURI => {
-                    onUpdateProjectThumbnail(
-                        projectId,
-                        dataURItoBlob(dataURI),
-                        () => {
-                            onShowThumbnailSuccess();
-                            setIsUpdatingThumbnail(false);
-                        },
-                        () => {
-                            onShowThumbnailError();
-                            setIsUpdatingThumbnail(false);
-                        }
-                    );
-                });
-            } catch (e) {
-                onShowThumbnailError();
-                setIsUpdatingThumbnail(false);
-            }
+            storeProjectThumbnail(vm, dataURI => {
+                onUpdateProjectThumbnail(
+                    projectId,
+                    dataURItoBlob(dataURI),
+                    () => {
+                        onShowThumbnailSuccess();
+                        setIsUpdatingThumbnail(false);
+                    },
+                    () => {
+                        onShowThumbnailError();
+                        setIsUpdatingThumbnail(false);
+                    }
+                );
+            });
         }, 3000),
         [
             onUpdateProjectThumbnail,
