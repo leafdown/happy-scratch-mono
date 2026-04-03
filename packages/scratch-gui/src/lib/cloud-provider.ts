@@ -1,8 +1,21 @@
 import log from './log.js';
 import throttle from 'lodash.throttle';
 
-
 class CloudProvider {
+    private vm: any;
+    private username: string | null = null;
+    private projectId: string | null = null;
+    private cloudHost: string;
+    private readAuth?: () => Promise<string | null | undefined>;
+
+    private isTryingToConnect = false;
+    private connection: WebSocket | null = null;
+    private connectionAttempts: number;
+    private queuedData: string[];
+    private _connectionTimeout: number | null = null;
+
+    private sendCloudData: (data: string) => void;
+
     /**
      * A cloud data provider which creates and manages a web socket connection
      * to the Scratch cloud data server. This provider is responsible for
@@ -11,13 +24,20 @@ class CloudProvider {
      * @param {VirtualMachine} vm The Scratch virtual machine to interface with
      * @param {string} username The username to associate cloud data updates with
      * @param {string} projectId The id associated with the project containing
-     * cloud data.
+     * @param {null | undefined | () => Promise<string | null | undefined>} readAuth A function to get an auth token
      */
-    constructor (cloudHost, vm, username, projectId) {
+    constructor (
+        cloudHost: string,
+        vm: unknown,
+        username: string,
+        projectId: string,
+        readAuth?: () => Promise<string | null | undefined>
+    ) {
         this.vm = vm;
         this.username = username;
         this.projectId = projectId;
         this.cloudHost = cloudHost;
+        this.readAuth = readAuth;
 
         this.connectionAttempts = 0;
 
@@ -25,11 +45,17 @@ class CloudProvider {
         // connection was ready
         this.queuedData = [];
 
+        this.isTryingToConnect = true;
         this.openConnection();
 
         // Send a message to the cloud server at a rate of no more
         // than 10 messages/sec.
         this.sendCloudData = throttle(this._sendCloudData, 100);
+    }
+
+    isConnectedOrConnecting () {
+        // There is a brief moment in time between when we start connecting and when the connection object is set
+        return this.isTryingToConnect || !!this.connection;
     }
 
     /**
@@ -39,10 +65,26 @@ class CloudProvider {
     openConnection () {
         this.connectionAttempts += 1;
 
+        const authPromise = this.readAuth ? this.readAuth() : null;
+
+        if (authPromise) {
+            authPromise.then(token => {
+                this.connectWithToken(token);
+            }).catch(error => log.error('Could not read auth for clouddata', error));
+        } else {
+            this.connectWithToken(null);
+        }
+    }
+
+    private connectWithToken (token: string | null | undefined) {
+        // See https://stackoverflow.com/questions/4361173/http-headers-in-websockets-client-api
+        const protocols = token ? [`bearer!${token}`] : [];
+
         try {
-            this.connection = new WebSocket((location.protocol === 'http:' ? 'ws://' : 'wss://') + this.cloudHost);
+            this.connection = new WebSocket((location.protocol === 'http:' ? 'ws://' : 'wss://') + this.cloudHost, protocols);
         } catch (e) {
             log.warn('Websocket support is not available in this browser', e);
+            this.isTryingToConnect = false;
             this.connection = null;
             return;
         }
@@ -106,13 +148,13 @@ class CloudProvider {
      * @param {Function} fn - The function to call after the delay (typically to reopen the connection).
      * @param {number} time - The delay time in milliseconds before attempting to reconnect.
      */
-    setTimeout (fn, time) {
+    setTimeout (fn: () => void, time: number) {
         log.info(`Reconnecting in ${(time / 1000).toFixed(1)}s, attempt ${this.connectionAttempts}`);
         this._connectionTimeout = window.setTimeout(fn, time);
     }
 
     parseMessage (message) {
-        const varData = {};
+        const varData: any = {};
         switch (message.method) {
         case 'set': {
             varData.varUpdate = {
@@ -129,11 +171,16 @@ class CloudProvider {
      * Format and send a message to the cloud data server.
      * @param {string} methodName The message method, indicating the action to perform.
      * @param {string} dataName The name of the cloud variable this message pertains to
-     * @param {string | number} dataValue The value to set the cloud variable to
+     * @param {string | number | null} dataValue The value to set the cloud variable to
      * @param {string} dataNewName The new name for the cloud variable (if renaming)
      */
-    writeToServer (methodName, dataName, dataValue, dataNewName) {
-        const msg = {};
+    writeToServer (
+        methodName: string,
+        dataName?: string,
+        dataValue?: string | number | null,
+        dataNewName?: string
+    ) {
+        const msg: any = {};
         msg.method = methodName;
         msg.user = this.username;
         msg.project_id = this.projectId;
@@ -161,7 +208,7 @@ class CloudProvider {
      * @param {string} data The formatted message to send.
      */
     _sendCloudData (data) {
-        this.connection.send(`${data}\n`);
+        this.connection!.send(`${data}\n`);
     }
 
     /**
@@ -170,7 +217,7 @@ class CloudProvider {
      * @param {string} name The name of the variable to create
      * @param {string | number} value The value of the new cloud variable.
      */
-    createVariable (name, value) {
+    createVariable (name: string, value: string | number) {
         this.writeToServer('create', name, value);
     }
 
@@ -180,7 +227,7 @@ class CloudProvider {
      * @param {string} name The name of the variable to update
      * @param {string | number} value The new value for the variable
      */
-    updateVariable (name, value) {
+    updateVariable (name: string, value: string | number) {
         this.writeToServer('set', name, value);
     }
 
@@ -190,7 +237,7 @@ class CloudProvider {
      * @param {string} oldName The old name of the variable to rename
      * @param {string} newName The new name for the cloud variable.
      */
-    renameVariable (oldName, newName) {
+    renameVariable (oldName: string, newName: string) {
         this.writeToServer('rename', oldName, null, newName);
     }
 
@@ -199,7 +246,7 @@ class CloudProvider {
      * a cloud variable on the server.
      * @param {string} name The name of the variable to delete
      */
-    deleteVariable (name) {
+    deleteVariable (name: string) {
         this.writeToServer('delete', name);
     }
 
@@ -225,6 +272,7 @@ class CloudProvider {
      * and current state.
      */
     clear () {
+        this.isTryingToConnect = false;
         this.connection = null;
         this.vm = null;
         this.username = null;
