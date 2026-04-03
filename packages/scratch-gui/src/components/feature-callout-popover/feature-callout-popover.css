@@ -35,18 +35,17 @@
     line-height: 1.25rem;
 }
 
-.non-blocking-overlay {
+.modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: $z-index-modal-overlay;
     background-color: transparent;
     pointer-events: none;
 }
 
-.non-blocking-content {
+.modal-content {
     display: flex;
     border: none;
     border-radius: 0;
@@ -61,7 +60,7 @@
 
 /* When opened on first render, the popover will have `focus-visible`, which applies the outline.
    Ideally, we'd only want to show an outline after the user has interacted with it via keyboard */
-.non-blocking-content:focus-visible {
+.modal-content:focus-visible {
     outline: none; 
 }
 

@@ -191,6 +191,7 @@ const GUIComponent = props => {
         onTelemetryModalOptOut,
         onUpdateProjectThumbnail,
         showComingSoon,
+        showNewFeatureCallouts,
         soundsTabVisible,
         stageSizeMode,
         targetIsStage,
@@ -537,11 +538,14 @@ const GUIComponent = props => {
                                 isFullScreen={isFullScreen}
                                 isRendererSupported={isRendererSupported}
                                 isRtl={isRtl}
+                                isCreating={isCreating}
                                 stageSize={stageSize}
                                 vm={vm}
                                 ariaRole="region"
                                 ariaLabel={intl.formatMessage(ariaMessages.stage)}
                                 manuallySaveThumbnails={manuallySaveThumbnails}
+                                loading={loading}
+                                showNewFeatureCallouts={showNewFeatureCallouts}
                                 userOwnsProject={userOwnsProject}
                                 username={username}
                                 onUpdateProjectThumbnail={onUpdateProjectThumbnail}

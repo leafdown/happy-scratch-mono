@@ -83,6 +83,7 @@ const StageHeaderComponent = function (props) {
         isFullScreen,
         isPlayerOnly,
         manuallySaveThumbnails,
+        loadingOrCreating,
         onKeyPress,
         onSetStageLarge,
         onSetStageSmall,
@@ -91,9 +92,9 @@ const StageHeaderComponent = function (props) {
         onUpdateProjectThumbnail,
         projectId,
         showBranding,
+        showNewFeatureCallouts,
         stageSizeMode,
         vm,
-        isProjectLoaded,
         userOwnsProject,
         username,
         onShowSettingThumbnail,
@@ -110,8 +111,9 @@ const StageHeaderComponent = function (props) {
     const [isThumbnailTooltipOpen, setIsThumbnailTooltipOpen] = useState(false);
     const [isUpdatingThumbnail, setIsUpdatingThumbnail] = useState(false);
 
+    const shouldShowThumbnailSaveButton = manuallySaveThumbnails && userOwnsProject;
     // TODO: Remove this callout after 60 days of manual thumbnail update release.
-    const shouldShowCallout = manuallySaveThumbnails && isProjectLoaded && userOwnsProject &&
+    const shouldShowCallout = shouldShowThumbnailSaveButton && showNewFeatureCallouts && !loadingOrCreating &&
         getLocalStorageValue(LOCAL_STORAGE_KEY, username ?? '') !== true;
 
     useEffect(() => {
@@ -256,7 +258,6 @@ const StageHeaderComponent = function (props) {
                             targetRef={thumbnailButtonRef}
                             side={PopupSide.LEFT}
                             align={PopupAlign.DOWN}
-                            nonBlocking
                             title={intl.formatMessage(messages.thumbnailTooltipTitle)}
                             body={
                                 <FormattedMessage
@@ -267,7 +268,7 @@ const StageHeaderComponent = function (props) {
                                 />
                             }
                         />
-                        {manuallySaveThumbnails && isProjectLoaded && userOwnsProject && (
+                        {shouldShowThumbnailSaveButton && (
                             <Button
                                 title={intl.formatMessage(messages.setThumbnail)}
                                 className={classNames(
@@ -323,17 +324,18 @@ StageHeaderComponent.propTypes = {
     isFullScreen: PropTypes.bool.isRequired,
     isPlayerOnly: PropTypes.bool.isRequired,
     manuallySaveThumbnails: PropTypes.bool,
+    loadingOrCreating: PropTypes.bool,
     onKeyPress: PropTypes.func.isRequired,
     onSetStageFull: PropTypes.func.isRequired,
     onSetStageLarge: PropTypes.func.isRequired,
     onSetStageSmall: PropTypes.func.isRequired,
     onSetStageUnFull: PropTypes.func.isRequired,
     onUpdateProjectThumbnail: PropTypes.func,
-    projectId: PropTypes.number.isRequired,
+    projectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     showBranding: PropTypes.bool.isRequired,
+    showNewFeatureCallouts: PropTypes.bool,
     stageSizeMode: PropTypes.oneOf(Object.keys(STAGE_SIZE_MODES)),
     vm: PropTypes.instanceOf(VM).isRequired,
-    isProjectLoaded: PropTypes.bool,
     userOwnsProject: PropTypes.bool,
     username: PropTypes.string,
     onShowSettingThumbnail: PropTypes.func,
