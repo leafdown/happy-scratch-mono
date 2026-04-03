@@ -1,6 +1,6 @@
 import {defineMessages, FormattedMessage, useIntl} from 'react-intl';
 import PropTypes from 'prop-types';
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import VM from '@scratch/scratch-vm';
 
 import Box from '../box/box.jsx';
@@ -25,6 +25,9 @@ import ConfirmationPrompt from '../confirmation-prompt/confirmation-prompt.jsx';
 import FeatureCalloutPopover from '../feature-callout-popover/feature-callout-popover.jsx';
 import classNames from 'classnames';
 import {PopupAlign, PopupSide} from '../../lib/calculatePopupPosition.js';
+import {getLocalStorageValue, setLocalStorageValue} from '../../lib/local-storage.js';
+
+const LOCAL_STORAGE_KEY = 'hasIntroducedEditorManualSetThumbnail';
 
 const messages = defineMessages({
     largeStageSizeMessage: {
@@ -80,6 +83,7 @@ const StageHeaderComponent = function (props) {
         isFullScreen,
         isPlayerOnly,
         manuallySaveThumbnails,
+        loadingOrCreating,
         onKeyPress,
         onSetStageLarge,
         onSetStageSmall,
@@ -88,10 +92,11 @@ const StageHeaderComponent = function (props) {
         onUpdateProjectThumbnail,
         projectId,
         showBranding,
+        showNewFeatureCallouts,
         stageSizeMode,
         vm,
-        isProjectLoaded,
         userOwnsProject,
+        username,
         onShowSettingThumbnail,
         onShowThumbnailSuccess,
         onShowThumbnailError
@@ -105,6 +110,19 @@ const StageHeaderComponent = function (props) {
     const [isThumbnailPromptOpen, setIsThumbnailPromptOpen] = useState(false);
     const [isThumbnailTooltipOpen, setIsThumbnailTooltipOpen] = useState(false);
     const [isUpdatingThumbnail, setIsUpdatingThumbnail] = useState(false);
+
+    const shouldShowThumbnailSaveButton = manuallySaveThumbnails && userOwnsProject;
+    // TODO: Remove this callout after 60 days of manual thumbnail update release.
+    const shouldShowCallout = shouldShowThumbnailSaveButton && showNewFeatureCallouts && !loadingOrCreating &&
+        getLocalStorageValue(LOCAL_STORAGE_KEY, username ?? '') !== true;
+
+    useEffect(() => {
+        if (shouldShowCallout) {
+            setIsThumbnailTooltipOpen(true);
+        } else {
+            setIsThumbnailTooltipOpen(false);
+        }
+    }, [shouldShowCallout]);
 
     const onUpdateThumbnail = useCallback(
         throttle(() => {
@@ -140,7 +158,14 @@ const StageHeaderComponent = function (props) {
 
     const onThumbnailPromptOpen = useCallback(() => {
         setIsThumbnailPromptOpen(true);
-    }, []);
+        try {
+            setLocalStorageValue(LOCAL_STORAGE_KEY, username ?? '', true);
+        } catch (e) {
+            // eslint-disable-next-line no-console
+            console.warn('Unable to set thumbnail tooltip local storage value. Check if local storage is enabled.', e);
+        }
+        setIsThumbnailTooltipOpen(false);
+    }, [username]);
 
     const onThumbnailPromptClose = useCallback(() => {
         setIsThumbnailPromptOpen(false);
@@ -150,10 +175,6 @@ const StageHeaderComponent = function (props) {
         onThumbnailPromptClose();
         onUpdateThumbnail();
     }, [onUpdateThumbnail]);
-
-    const onOpenTooltip = useCallback(() => {
-        setIsThumbnailTooltipOpen(true);
-    }, []);
 
     const onCloseTooltip = useCallback(() => {
         setIsThumbnailTooltipOpen(false);
@@ -231,7 +252,6 @@ const StageHeaderComponent = function (props) {
                 <Box className={styles.stageMenuWrapper}>
                     <Controls vm={vm} />
                     <div className={styles.stageSizeRow}>
-                        {/* To remove - new feature awareness tooltip */}
                         <FeatureCalloutPopover
                             isOpen={isThumbnailTooltipOpen}
                             onRequestClose={onCloseTooltip}
@@ -248,7 +268,7 @@ const StageHeaderComponent = function (props) {
                                 />
                             }
                         />
-                        {manuallySaveThumbnails && isProjectLoaded && userOwnsProject && (
+                        {shouldShowThumbnailSaveButton && (
                             <Button
                                 title={intl.formatMessage(messages.setThumbnail)}
                                 className={classNames(
@@ -304,18 +324,20 @@ StageHeaderComponent.propTypes = {
     isFullScreen: PropTypes.bool.isRequired,
     isPlayerOnly: PropTypes.bool.isRequired,
     manuallySaveThumbnails: PropTypes.bool,
+    loadingOrCreating: PropTypes.bool,
     onKeyPress: PropTypes.func.isRequired,
     onSetStageFull: PropTypes.func.isRequired,
     onSetStageLarge: PropTypes.func.isRequired,
     onSetStageSmall: PropTypes.func.isRequired,
     onSetStageUnFull: PropTypes.func.isRequired,
     onUpdateProjectThumbnail: PropTypes.func,
-    projectId: PropTypes.number.isRequired,
+    projectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     showBranding: PropTypes.bool.isRequired,
+    showNewFeatureCallouts: PropTypes.bool,
     stageSizeMode: PropTypes.oneOf(Object.keys(STAGE_SIZE_MODES)),
     vm: PropTypes.instanceOf(VM).isRequired,
-    isProjectLoaded: PropTypes.bool,
     userOwnsProject: PropTypes.bool,
+    username: PropTypes.string,
     onShowSettingThumbnail: PropTypes.func,
     onShowThumbnailError: PropTypes.func,
     onShowThumbnailSuccess: PropTypes.func

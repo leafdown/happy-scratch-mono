@@ -2,6 +2,8 @@ import React, {useRef, useState, useCallback, useEffect} from 'react';
 import PropTypes from 'prop-types';
 import calculatePopupPosition, {PopupAlign, PopupSide} from '../../lib/calculatePopupPosition';
 import ReactModal from 'react-modal';
+import ReactDOM from 'react-dom';
+import classNames from 'classnames';
 import styles from './modal-with-arrow.css';
 
 const ModalWithArrow = ({
@@ -87,14 +89,14 @@ const ModalWithArrow = ({
     
     if (!isOpen) return null;
 
-    return (
-        <>
+    return ReactDOM.createPortal(
+        <div className={styles.root}>
             <ReactModal
                 isOpen
                 onRequestClose={onRequestClose}
                 contentLabel={title}
-                className={modalContentStyle}
-                overlayClassName={modalOverlayStyle}
+                className={classNames(styles.modalContent, modalContentStyle)}
+                overlayClassName={classNames(styles.modalOverlay, modalOverlayStyle)}
                 onAfterOpen={updatePosition}
                 contentRef={onPopupMount}
                 style={{
@@ -112,19 +114,17 @@ const ModalWithArrow = ({
                     src={arrowIcon}
                     alt=""
                     aria-hidden="true"
+                    className={styles.arrow}
                     style={{
-                        position: 'fixed',
                         top: pos.arrowTop,
                         left: pos.arrowLeft,
                         width: rotatedArrowWidth,
-                        height: rotatedArrowHeight,
-                        zIndex: 1001,
-                        border: 'none',
-                        backgroundColor: 'transparent'
+                        height: rotatedArrowHeight
                     }}
                 />
             )}
-        </>
+        </div>,
+        document.body
     );
 };
 
@@ -156,9 +156,7 @@ ModalWithArrow.propTypes = {
 
 ModalWithArrow.defaultProps = {
     align: PopupAlign.CENTER,
-    onRequestClose: null,
-    modalContentStyle: styles.modalContent,
-    modalOverlayStyle: styles.modalOverlay
+    onRequestClose: null
 };
 
 export default ModalWithArrow;

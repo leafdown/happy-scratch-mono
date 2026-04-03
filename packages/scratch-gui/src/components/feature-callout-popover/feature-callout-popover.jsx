@@ -91,6 +91,9 @@ const FeatureCalloutPopover = ({
             align={align}
             layoutConfig={memoizedLayoutConfig}
             arrowConfig={arrowConfig}
+            arrowStyle={styles.arrow}
+            modalOverlayStyle={styles.modalOverlay}
+            modalContentStyle={styles.modalContent}
         >
             <FeatureCalloutContent
                 title={title}
