@@ -4,24 +4,12 @@
  */
 const fixupSvgString = require('./fixup-svg-string');
 const {generate, parse, walk} = require('css-tree');
+const {ident} = require('css-tree/utils');
 const DOMPurify = require('isomorphic-dompurify');
 
 const sanitizeSvg = {};
 
 const isInternalRef = ref => ref.startsWith('#') || ref.toLowerCase().startsWith('data:');
-
-/**
- * Decode CSS escape sequences in a string.
- * CSS escapes: \HHHHHH (1-6 hex digits, optionally followed by one whitespace) or \C (any non-hex char).
- * This is the first step of canonicalization: neither jsdom nor css-tree decodes these,
- * but real browsers do, so we must decode before parsing.
- * @param {string} str - String to decode
- * @returns {string} Decoded string
- */
-const decodeCssEscapes = str => str.replace(
-    /\\([0-9a-fA-F]{1,6})\s?|\\(.)/g,
-    (match, hex, char) => (hex ? String.fromCodePoint(parseInt(hex, 16)) : char)
-);
 
 /**
  * Walk a css-tree AST and return true if any Url node references an external resource.
@@ -32,7 +20,7 @@ const astHasExternalUrls = ast => {
     let found = false;
     walk(ast, node => {
         if (node.type === 'Url') {
-            const urlValue = (node.value.value || '').trim().replace(/['"]/g, '');
+            const urlValue = node.value.trim().replace(/['"]/g, '');
             if (!isInternalRef(urlValue)) {
                 found = true;
             }
@@ -51,7 +39,7 @@ const astHasExternalUrls = ast => {
  * @returns {boolean} true if an external url() reference was found
  */
 const cssHasExternalUrls = (cssText, parseContext) => {
-    const decoded = decodeCssEscapes(cssText);
+    const decoded = ident.decode(cssText);
     try {
         return astHasExternalUrls(parse(decoded, {context: parseContext}));
     } catch {
@@ -112,7 +100,7 @@ DOMPurify.addHook(
         if (data.tagName === 'style') {
             // Canonicalize: decode CSS escapes then parse, so css-tree sees
             // normalized tokens (e.g. \75\72\6c becomes url).
-            const decodedCss = decodeCssEscapes(node.textContent);
+            const decodedCss = ident.decode(node.textContent);
             const ast = parse(decodedCss);
             let isModified = decodedCss !== node.textContent;
 
