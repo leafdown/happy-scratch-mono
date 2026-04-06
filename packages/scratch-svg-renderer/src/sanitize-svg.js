@@ -55,34 +55,25 @@ const cssHasExternalUrls = (cssText, parseContext) => {
     }
 };
 
+// Attributes that directly reference a URI (not via CSS url())
+const URI_ATTRIBUTES = new Set(['href', 'xlink:href']);
+
 DOMPurify.addHook(
     'beforeSanitizeAttributes',
     currentNode => {
+        if (!currentNode || !currentNode.attributes) return currentNode;
 
-        if (currentNode && currentNode.href && currentNode.href.baseVal) {
-            const href = currentNode.href.baseVal.replace(/\s/g, '');
-            // "data:" and "#" are valid hrefs
-            if (!isInternalRef(href)) {
-                // TODO: Those can be in different namespaces than `xlink:`
-                if (currentNode.attributes.getNamedItem('xlink:href')) {
-                    currentNode.attributes.removeNamedItem('xlink:href');
-                    delete currentNode['xlink:href'];
+        for (let i = currentNode.attributes.length - 1; i >= 0; i--) {
+            const attr = currentNode.attributes[i];
+            if (!attr.value) continue;
+
+            if (URI_ATTRIBUTES.has(attr.name)) {
+                // Direct URI: strip whitespace and check
+                if (!isInternalRef(attr.value.replace(/\s/g, ''))) {
+                    currentNode.removeAttribute(attr.name);
                 }
-                if (currentNode.attributes.getNamedItem('href')) {
-                    currentNode.attributes.removeNamedItem('href');
-                    delete currentNode.href;
-                }
-            }
-        }
-
-        // Remove attributes containing url(...) with external references.
-        // Uses css-tree to parse attribute values, which handles quoting,
-        // whitespace, comments, and other CSS syntax that regex would miss.
-        if (currentNode && currentNode.attributes) {
-            for (let i = currentNode.attributes.length - 1; i >= 0; i--) {
-                const attr = currentNode.attributes[i];
-                if (!attr.value) continue;
-
+            } else {
+                // CSS value that might contain url()
                 const context = attr.name === 'style' ? 'declarationList' : 'value';
                 if (cssHasExternalUrls(attr.value, context)) {
                     currentNode.removeAttribute(attr.name);
