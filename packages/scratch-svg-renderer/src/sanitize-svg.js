@@ -10,6 +10,17 @@ const sanitizeSvg = {};
 
 const isInternalRef = ref => ref.startsWith('#') || ref.startsWith('data:');
 
+/**
+ * Decode CSS escape sequences in a string.
+ * CSS escapes: \HHHHHH (1-6 hex digits, optionally followed by one whitespace) or \C (any non-hex char).
+ * @param {string} str - String to decode
+ * @returns {string} Decoded string
+ */
+const decodeCssEscapes = str => str.replace(
+    /\\([0-9a-fA-F]{1,6})\s?|\\(.)/g,
+    (match, hex, char) => (hex ? String.fromCodePoint(parseInt(hex, 16)) : char)
+);
+
 DOMPurify.addHook(
     'beforeSanitizeAttributes',
     currentNode => {
@@ -35,18 +46,21 @@ DOMPurify.addHook(
             for (let i = currentNode.attributes.length - 1; i >= 0; i--) {
                 const attr = currentNode.attributes[i];
                 const rawValue = attr.value || '';
-                const value = rawValue.toLowerCase().replace(/\s/g, '');
-        
-                const urlMatch = value.match(/url\((.+?)\)/);
-                if (urlMatch) {
+                // Decode CSS escapes so that sequences like \75\72\6c are resolved to "url"
+                const value = decodeCssEscapes(rawValue)
+                    .toLowerCase()
+                    .replace(/\s/g, '');
+
+                for (const urlMatch of value.matchAll(/url\((.+?)\)/g)) {
                     const ref = urlMatch[1].replace(/['"]/g, '');
                     if (!isInternalRef(ref)) {
                         currentNode.removeAttribute(attr.name);
+                        break;
                     }
                 }
             }
         }
-    
+
         return currentNode;
     }
 );
@@ -55,8 +69,11 @@ DOMPurify.addHook(
     'uponSanitizeElement',
     (node, data) => {
         if (data.tagName === 'style') {
-            const ast = parse(node.textContent);
-            let isModified = false;
+            // Decode CSS escape sequences before parsing so that css-tree
+            // correctly recognizes obfuscated tokens like \75\72\6c → url
+            const decodedCss = decodeCssEscapes(node.textContent);
+            const ast = parse(decodedCss);
+            let isModified = decodedCss !== node.textContent;
 
             walk(ast, (astNode, item, list) => {
                 // @import rules
@@ -64,14 +81,14 @@ DOMPurify.addHook(
                     list.remove(item);
                     isModified = true;
                 }
-                
+
                 // Elements using url(...) for external resources
                 if (astNode.type === 'Declaration' && astNode.value) {
                     let shouldRemove = false;
                     walk(astNode.value, valueNode => {
                         if (valueNode.type === 'Url') {
                             const urlValue = (valueNode.value.value || '').trim().replace(/['"]/g, '');
-    
+
                             if (!isInternalRef(urlValue)) {
                                 shouldRemove = true;
                             }
@@ -98,7 +115,7 @@ let _TextDecoder;
 let _TextEncoder;
 if (typeof TextDecoder === 'undefined' || typeof TextEncoder === 'undefined') {
     // Wait to require the text encoding polyfill until we know it's needed.
-     
+
     const encoding = require('fastestsmallesttextencoderdecoder');
     _TextDecoder = encoding.TextDecoder;
     _TextEncoder = encoding.TextEncoder;
