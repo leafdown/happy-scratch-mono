@@ -132,7 +132,7 @@ const StageHeaderComponent = function (props) {
 
             setIsUpdatingThumbnail(true);
             onShowSettingThumbnail();
-            if (onSetManualThumbnail) onSetManualThumbnail(projectId);
+            onSetManualThumbnail?.(projectId);
 
             storeProjectThumbnail(vm, dataURI => {
                 onUpdateProjectThumbnail(
@@ -163,7 +163,7 @@ const StageHeaderComponent = function (props) {
     const onThumbnailPromptOpen = useCallback(() => {
         setIsThumbnailPromptOpen(true);
         
-        if (onSetManualThumbnailButtonClick) onSetManualThumbnailButtonClick(projectId);
+        onSetManualThumbnailButtonClick?.(projectId);
         
         try {
             setLocalStorageValue(LOCAL_STORAGE_KEY, username ?? '', true);
