@@ -698,7 +698,30 @@ class Target extends EventEmitter {
         };
 
         for (const varId in allReferences) {
-            if (this.lookupVariableById(varId)) continue;
+            const existing = this.lookupVariableById(varId);
+            if (existing) {
+                // The id resolves to a real variable. Normalize displayed names so
+                // every block field shows the variable's current name. A previous
+                // target's pass on this load may have created the stage variable with
+                // a bumped name; refs on this target that still show the original
+                // name need to be brought into agreement. Scan all refs (not just
+                // the first) so an inconsistent set of refs to the same id heals
+                // even when the first ref happens to already match.
+                if (!conflictNamesToReplace[varId]) {
+                    const staleRef = allReferences[varId].find(
+                        ref => ref.referencingField.value !== existing.name
+                    );
+                    if (staleRef) {
+                        conflictNamesToReplace[varId] = existing.name;
+                        log.warn(
+                            `Reconciled dangling reference on '${this.getName()}': normalized displayed ` +
+                            `name to '${existing.name}' for id '${varId}' ` +
+                            `(was '${staleRef.referencingField.value}').`
+                        );
+                    }
+                }
+                continue;
+            }
             // The referenced id is not defined anywhere. Treat this as a reference
             // to a global from a different project (or from a backpack paste / sprite
             // import that lost its definition). Look for a same-name same-type global
