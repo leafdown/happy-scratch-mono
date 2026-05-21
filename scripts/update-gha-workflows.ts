@@ -141,7 +141,8 @@ function generatePathFilters(workspaces: Workspace[], workspaceMap: Map<string, 
 
 // ─── publish.yml update ──────────────────────────────────────────────────────
 
-const PUBLISH_STEP_MARKER = '      - name: Push to Develop';
+const PUBLISH_STEP_MARKER =
+    '# update-gha-workflows.ts: insert new "Publish <package>" steps before this line.';
 
 /**
  * Scans publish.yml for existing "Publish <name>" steps and adds a default
@@ -184,17 +185,26 @@ function updatePublishWorkflow(content: string, workspaces: Workspace[]): string
         ].join('\n');
     }).join('\n\n');
 
-    // Insert before "Push to Develop"
-    const insertIndex = content.indexOf(PUBLISH_STEP_MARKER);
-    if (insertIndex === -1) {
-        console.warn('Warning: Could not find "Push to Develop" step in publish.yml.');
-        console.warn('New publish steps were NOT added. Please add them manually:');
-        for (const ws of missing) {
-            console.warn(`  - Publish ${ws.bareName}`);
-        }
-        return content;
+    // A missing marker is fatal rather than a warning: silently dropping
+    // publish steps would let workflow drift go unnoticed. The match is
+    // indent-tolerant so the YAML formatter is free to pick a column.
+    const markerRegex = new RegExp(
+        `^[ \\t]*${PUBLISH_STEP_MARKER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[ \\t]*$`,
+        'm',
+    );
+    const markerMatch = markerRegex.exec(content);
+    if (!markerMatch) {
+        const wanted = missing.map(ws => `  - Publish ${ws.bareName}`).join('\n');
+        throw new Error(
+            `Could not find the insert marker in publish.yml. ` +
+            `Expected to find a line containing:\n  ${PUBLISH_STEP_MARKER}\n` +
+            `Add it back (at the bottom of the cd: job's steps, before the next job) ` +
+            `or update PUBLISH_STEP_MARKER in scripts/update-gha-workflows.ts.\n` +
+            `New publish steps that were NOT added:\n${wanted}`,
+        );
     }
 
+    const insertIndex = markerMatch.index;
     return content.slice(0, insertIndex) + newSteps + '\n\n' + content.slice(insertIndex);
 }
 
