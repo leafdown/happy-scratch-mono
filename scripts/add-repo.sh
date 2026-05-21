@@ -21,12 +21,12 @@
 #   --org <github-org>         GitHub organization (default: scratchfoundation)
 #   --cache-dir <path>         Local cache dir holding clones of source repos (default: ./..)
 #   --no-ci                    Skip CI workflow regeneration at the end
-#   --continue-on-error        If a per-dep package.json rewrite fails during the
-#                              cross-workspace dep rewire step, log the failure to
-#                              add-repo.errors.log and keep going (default: hard-fail
-#                              on the first failure). Does not affect the final
-#                              lockfile install at the end of the script, which
-#                              always hard-fails.
+#   --continue-on-error        If a per-package package.json rewrite fails
+#                              during the cross-workspace dep rewire step, log
+#                              the failure to add-repo.errors.log and keep
+#                              going (default: hard-fail on the first failure).
+#                              Does not affect the final lockfile install at
+#                              the end of the script, which always hard-fails.
 #   --help, -h                 Show this help message
 #
 # Examples:
@@ -500,49 +500,86 @@ ALL_PACKAGES=$(get_existing_packages)
 # registry version.
 #
 # Two cases are handled:
-#   1. Bare-name deps (e.g. "scratch-vm": "...") — across every package, since an
-#      existing package may reference the newly-added repo by bare name.
-#   2. Already @scratch/-prefixed deps with a stale exact version (e.g.
+#   1. Bare-name keys (e.g. "scratch-vm": "...") — checked in every package,
+#      since an existing package may still reference the newly-added repo by
+#      bare name from before its import.
+#   2. Already @scratch/-prefixed keys with a stale exact version (e.g.
 #      "@scratch/scratch-svg-renderer": "13.7.3") — only inside the newly-added
-#      package, where the source repo may have shipped its cross-deps pre-prefixed
-#      and pinned to whatever was the latest registry release at import time.
+#      package, where the source repo may have shipped its cross-deps pre-
+#      prefixed and pinned to whatever was the latest registry release at
+#      import time.
 #
-# Already-@scratch/-prefixed deps in OTHER packages are left as-is to avoid
+# Already-@scratch/-prefixed keys in OTHER packages are left as-is to avoid
 # opportunistic rewrites of unrelated packages.
+#
+# After rewriting, each affected dep section is sorted alphabetically by key,
+# matching what `npm install --save` produces.
 #
 # npm's workspace: protocol would be the ideal here ("resolve to the workspace,
 # substitute the actual version at publish"), but npm does not actually support
 # it (npm/cli#8845 — EUNSUPPORTEDPROTOCOL at install time), so exact-pin matches
 # the existing scratch-gui / scratch-vm / scratch-render convention.
+
+# Build a JSON array of rewrite rules: [{matchKeys, target, version}, ...].
+# The "new package" variant lists both the bare and the @scratch/-prefixed
+# form in matchKeys so the new package's pre-prefixed-but-stale pins get
+# repinned to the local workspace version too.
+build_rewrites_json() {
+    local include_full="$1"
+    local result='[]'
+    local dep ver full match_keys
+    for dep in $ALL_PACKAGES; do
+        ver=$(jq -r '.version' "${MONOREPO_ROOT}/packages/${dep}/package.json")
+        full="${NPM_ORGANIZATION}/${dep}"
+        if [ "$include_full" = "true" ]; then
+            match_keys=$(jq -cn --arg b "$dep" --arg f "$full" '[$b, $f]')
+        else
+            match_keys=$(jq -cn --arg b "$dep" '[$b]')
+        fi
+        result=$(jq -c --argjson mk "$match_keys" --arg t "$full" --arg v "$ver" \
+            '. + [{matchKeys: $mk, target: $t, version: $v}]' <<< "$result")
+    done
+    printf '%s' "$result"
+}
+
+REWRITES_NEW_PKG=$(build_rewrites_json true)
+REWRITES_OTHER_PKG=$(build_rewrites_json false)
+
+# Single-pass filter applied to each package.json: walks every object-shaped
+# dep section, rewrites matching keys to their @scoped equivalents pinned to
+# the local workspace version, and sorts each section by key.
+# shellcheck disable=SC2016
+# $rewrites below is a jq variable bound via --argjson, not a shell expansion.
+REWRITE_FILTER='
+def rewriteSection($rewrites):
+    to_entries
+    | map(. as $e
+          | ($rewrites | map(select(.matchKeys | index($e.key))) | first) as $hit
+          | if $hit then {key: $hit.target, value: $hit.version} else $e end)
+    | sort_by(.key)
+    | from_entries;
+
+reduce ("dependencies", "devDependencies", "peerDependencies", "optionalDependencies") as $k (.;
+    if .[$k] then .[$k] |= rewriteSection($rewrites) else . end
+)
+'
+
 for PACKAGE in $ALL_PACKAGES; do
     PACKAGE_JSON="${MONOREPO_ROOT}/packages/${PACKAGE}/package.json"
     if [ ! -r "$PACKAGE_JSON" ]; then
         continue
     fi
 
-    for DEP in $ALL_PACKAGES; do
-        DEP_VERSION=$(jq -r '.version' "${MONOREPO_ROOT}/packages/${DEP}/package.json")
-        DEP_FULL="${NPM_ORGANIZATION}/${DEP}"
+    if [ "$PACKAGE" = "$REPO_NAME" ]; then
+        REWRITES="$REWRITES_NEW_PKG"
+    else
+        REWRITES="$REWRITES_OTHER_PKG"
+    fi
 
-        # The names this loop will rewrite. Always the bare name; for the newly-
-        # added package also its @scratch/-prefixed form (likely stale).
-        NAMES_TO_CHECK=("${DEP}")
-        if [ "$PACKAGE" = "$REPO_NAME" ]; then
-            NAMES_TO_CHECK+=("${DEP_FULL}")
-        fi
-
-        for KIND in dependencies devDependencies optionalDependencies peerDependencies; do
-            for NAME in "${NAMES_TO_CHECK[@]}"; do
-                if jq -e ".${KIND}.\"${NAME}\"" "$PACKAGE_JSON" > /dev/null 2>&1; then
-                    if ! jq "del(.${KIND}.\"${NAME}\") \
-                           | .${KIND} += {\"${DEP_FULL}\": \"${DEP_VERSION}\"}" \
-                           "$PACKAGE_JSON" | sponge "$PACKAGE_JSON"; then
-                        package_replacement_error "$PACKAGE" "${NAME} (${KIND})"
-                    fi
-                fi
-            done
-        done
-    done
+    if ! jq --argjson rewrites "$REWRITES" "$REWRITE_FILTER" "$PACKAGE_JSON" \
+        | sponge "$PACKAGE_JSON"; then
+        package_replacement_error "$PACKAGE" "monorepo refs"
+    fi
 done
 
 # Rewrite require/import references for the new repo across the whole monorepo.
