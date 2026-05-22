@@ -9,7 +9,6 @@
 #
 # Prerequisites:
 #   - git-filter-repo   (brew install git-filter-repo  | sudo apt install git-filter-repo)
-#   - moreutils         (brew install moreutils        | sudo apt install moreutils)
 #   - jq                (brew install jq               | sudo apt install jq)
 #   - perl              (pre-installed on macOS, NixOS, and most Linux distributions)
 #
@@ -166,9 +165,8 @@ if ! git filter-repo -h &> /dev/null; then
     exit 1
 fi
 
-require_command sponge "Try: brew install moreutils   or: sudo apt install moreutils"
-require_command jq     "Try: brew install jq          or: sudo apt install jq"
-require_command perl   "Perl is used for portable in-place file rewrites and should already be present on macOS, NixOS, and Linux."
+require_command jq   "Try: brew install jq          or: sudo apt install jq"
+require_command perl "Perl is used for portable in-place file rewrites and should already be present on macOS, NixOS, and Linux."
 
 if [ -d "$PACKAGE_PATH" ]; then
     echo "Error: ${PACKAGE_DIR} already exists in the monorepo." >&2
@@ -297,8 +295,32 @@ get_existing_packages() {
     jq -r '.workspaces[]' "${MONOREPO_ROOT}/package.json" | sed 's|^packages/||'
 }
 
+# Apply a jq filter to FILE in place, via a sibling tempfile. Forwards all
+# arguments after FILE to jq; the temp file is mv'd into place only on jq
+# exit 0, so a jq failure leaves FILE untouched and propagates a non-zero
+# return up to set -e or to an `if !` caller that wants to react.
+#
+# `cp -p` seeds the tempfile with FILE's content and mode, so the subsequent
+# `>` truncate-and-write leaves the mode alone and the final mv preserves
+# it. Without this, mktemp's default 0600 would silently downgrade FILE
+# from 0644.
+jq_in_place() {
+    local file="$1"
+    shift
+    local tmp
+    tmp=$(mktemp "${file}.XXXXXX") || return 1
+    cp -p "$file" "$tmp" || { rm -f "$tmp"; return 1; }
+    if jq "$@" "$file" > "$tmp"; then
+        mv "$tmp" "$file"
+    else
+        local status=$?
+        rm -f "$tmp"
+        return "$status"
+    fi
+}
+
 # Handle a failed dep replacement. Default: hard-fail. --continue-on-error: log and continue.
-package_replacement_error () {
+package_replacement_error() {
     local package="$1"
     local dep="$2"
     echo "***ERROR*** Could not replace ${dep} in ${package} with the local workspace version." >&2
@@ -399,9 +421,10 @@ if [ -r "${PACKAGE_PATH}/package.json" ]; then
     # The single-quoted fragments below are jq filter syntax. $PACKAGE_NAME,
     # $MONOREPO_URL and $MONOREPO_VERSION are jq variables (bound via --arg),
     # not shell variables — they must NOT be expanded by the shell.
-    jq -f --arg PACKAGE_NAME "${NPM_ORGANIZATION}/${REPO_NAME}" \
-          --arg MONOREPO_URL "$MONOREPO_URL" \
-          --arg MONOREPO_VERSION "$MONOREPO_VERSION" \
+    jq_in_place "${PACKAGE_PATH}/package.json" \
+        -f --arg PACKAGE_NAME "${NPM_ORGANIZATION}/${REPO_NAME}" \
+           --arg MONOREPO_URL "$MONOREPO_URL" \
+           --arg MONOREPO_VERSION "$MONOREPO_VERSION" \
         <(join_args ' | ' \
             '.name |= $PACKAGE_NAME' \
             '.version |= $MONOREPO_VERSION' \
@@ -422,7 +445,7 @@ if [ -r "${PACKAGE_PATH}/package.json" ]; then
             'del(.devDependencies."semantic-release")' \
             'del(.devDependencies."scratch-semantic-release-config")' \
             'if (.devDependencies // {}) == {} then del(.devDependencies) else . end' \
-        ) "${PACKAGE_PATH}/package.json" | sponge "${PACKAGE_PATH}/package.json"
+        )
 fi
 
 # Normalize so subsequent diffs are minimal.
@@ -478,8 +501,8 @@ else
         fi
     done
     INSERT_AT=$((INSERT_AFTER_INDEX + 1))
-    jq ".workspaces |= (.[:${INSERT_AT}] + [\"${WORKSPACE_ENTRY}\"] + .[${INSERT_AT}:])" \
-        "${MONOREPO_ROOT}/package.json" | sponge "${MONOREPO_ROOT}/package.json"
+    jq_in_place "${MONOREPO_ROOT}/package.json" \
+        ".workspaces |= (.[:${INSERT_AT}] + [\"${WORKSPACE_ENTRY}\"] + .[${INSERT_AT}:])"
     if [ "$INSERT_AT" = "0" ]; then
         echo "    Prepended '${WORKSPACE_ENTRY}' (no monorepo deps detected)."
     else
@@ -594,8 +617,7 @@ for PACKAGE in $ALL_PACKAGES; do
         REWRITES="$REWRITES_OTHER_PKG"
     fi
 
-    if ! jq --argjson rewrites "$REWRITES" "$REWRITE_FILTER" "$PACKAGE_JSON" \
-        | sponge "$PACKAGE_JSON"; then
+    if ! jq_in_place "$PACKAGE_JSON" --argjson rewrites "$REWRITES" "$REWRITE_FILTER"; then
         package_replacement_error "$PACKAGE" "monorepo refs"
     fi
 done
