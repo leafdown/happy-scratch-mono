@@ -8,12 +8,17 @@
 
 import {commitPartial, commitsSort, finalizeContext} from './scripts/release-notes-writer-opts.mjs';
 
+// semantic-release template: strips the matched branch's prefix from ${name},
+// keeping channel and prerelease identifier free of '/' (npm dist-tags and
+// semver prerelease identifiers both forbid it).
+const stripPrefix = (prefix) => `\${name.replace(/^${prefix}\\//, "")}`;
+
 export default {
     branches: [
         'develop',
         '+([0-9])?(.{+([0-9]),x}).x',
-        { name: 'release/*', prerelease: '${name.replace(/^release\\//, "")}' },
-        { name: 'hotfix/*', prerelease: '${name.replace(/^hotfix\\//, "")}' }
+        { name: 'release/*', channel: stripPrefix('release'), prerelease: stripPrefix('release') },
+        { name: 'hotfix/*', channel: stripPrefix('hotfix'), prerelease: stripPrefix('hotfix') }
     ],
     plugins: [
         '@semantic-release/commit-analyzer',
