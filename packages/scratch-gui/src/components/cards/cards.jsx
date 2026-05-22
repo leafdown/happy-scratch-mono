@@ -99,6 +99,20 @@ class VideoStep extends React.Component {
         script2.async = true;
         script2.setAttribute('id', 'wistia-video-api');
         document.body.appendChild(script2);
+
+        // The Wistia API doesn't provide a callback for when the video is ready,
+        // so we use the global _wq queue that Wistia provides for this purpose.
+        // See the below for more details.
+        // https://docs.wistia.com/docs/javascript-player-api#with-standard-embeds
+        window._wq = window._wq || [];
+        window._wq.push({
+            id: this.props.video,
+            onReady: video => {
+                if (video) {
+                    video.focus();
+                }
+            }});
+
     }
 
     // We use the Wistia API here to update or pause the video dynamically:
@@ -127,6 +141,10 @@ class VideoStep extends React.Component {
 
         const script2 = document.getElementById('wistia-video-api');
         script2.parentNode.removeChild(script2);
+
+        // Clean up the _wq queue to prevent old callbacks from firing
+        // if the component is unmounted before the video is ready
+        window._wq = window._wq.filter(video => video.id !== this.props.video);
     }
 
     render () {
