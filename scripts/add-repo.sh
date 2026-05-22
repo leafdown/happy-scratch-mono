@@ -578,17 +578,28 @@ REWRITES_OTHER_PKG=$(build_rewrites_json false)
 # (bundleDependencies and its legacy spelling bundledDependencies) are
 # sorted and uniqued, since they're a set of names with no associated
 # version.
+#
+# If rewriting an object section produces duplicate keys (e.g. a package.json
+# lists both "scratch-foo" and "@scratch/scratch-foo"), the filter errors
+# out naming the section and the colliding key. That state shouldn't occur
+# in practice, and silently merging it would let stale pins win over the
+# freshly-rewritten workspace version.
 # shellcheck disable=SC2016
 # $rewrites below is a jq variable bound via --argjson, not a shell expansion.
 REWRITE_FILTER='
-def rewriteSection($rewrites):
+def rewriteSection($rewrites; $section):
     if type == "object" then
         to_entries
         | map(. as $e
               | ($rewrites | map(select(.matchKeys | index($e.key))) | first) as $hit
               | if $hit then {key: $hit.target, value: $hit.version} else $e end)
-        | sort_by(.key)
-        | from_entries
+        | . as $entries
+        | ($entries | group_by(.key) | map(select(length > 1) | .[0].key)) as $dups
+        | if ($dups | length) > 0 then
+              error("duplicate keys in \($section) after rewrite: \($dups | join(", "))")
+          else
+              $entries | sort_by(.key) | from_entries
+          end
     elif type == "array" then
         map(. as $name
             | ($rewrites | map(select(.matchKeys | index($name))) | first) as $hit
@@ -601,7 +612,7 @@ reduce (
     "dependencies", "devDependencies", "peerDependencies", "optionalDependencies",
     "bundleDependencies", "bundledDependencies"
 ) as $k (.;
-    if .[$k] then .[$k] |= rewriteSection($rewrites) else . end
+    if .[$k] then .[$k] |= rewriteSection($rewrites; $k) else . end
 )
 '
 
