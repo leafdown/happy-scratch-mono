@@ -10,26 +10,26 @@ exports[`Cards component showVideos=false shows the title image/name instead of 
   >
     <div>
       <div>
-        <div>
+        <button>
           <img
             src="test-file-stub"
           />
           Tutorials
-        </div>
+        </button>
         <div>
-          <div>
+          <button>
             <img
               draggable="false"
               src="test-file-stub"
             />
             Shrink
-          </div>
-          <div>
+          </button>
+          <button>
             <img
               src="test-file-stub"
             />
             Close
-          </div>
+          </button>
         </div>
       </div>
       <div>
@@ -58,26 +58,26 @@ exports[`Cards component showVideos=true shows the video step 1`] = `
   >
     <div>
       <div>
-        <div>
+        <button>
           <img
             src="test-file-stub"
           />
           Tutorials
-        </div>
+        </button>
         <div>
-          <div>
+          <button>
             <img
               draggable="false"
               src="test-file-stub"
             />
             Shrink
-          </div>
-          <div>
+          </button>
+          <button>
             <img
               src="test-file-stub"
             />
             Close
-          </div>
+          </button>
         </div>
       </div>
       <div>

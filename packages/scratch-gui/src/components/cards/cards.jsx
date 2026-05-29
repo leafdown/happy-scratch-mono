@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import React, {Fragment} from 'react';
+import React, {Fragment, useEffect} from 'react';
 import classNames from 'classnames';
 import {FormattedMessage} from 'react-intl';
 import Draggable from 'react-draggable';
@@ -18,9 +18,11 @@ import closeIcon from './icon--close.svg';
 import {translateVideo} from '../../lib/libraries/decks/translate-video.js';
 import {translateImage} from '../../lib/libraries/decks/translate-image.js';
 
+import {KEY} from '../../lib/navigation-keys.js';
+
 const CardHeader = ({onCloseCards, onShrinkExpandCards, onShowAll, totalSteps, step, expanded}) => (
     <div className={expanded ? styles.headerButtons : classNames(styles.headerButtons, styles.headerButtonsHidden)}>
-        <div
+        <button
             className={styles.allButton}
             onClick={onShowAll}
         >
@@ -33,7 +35,7 @@ const CardHeader = ({onCloseCards, onShrinkExpandCards, onShowAll, totalSteps, s
                 description="Title for button to return to tutorials library"
                 id="gui.cards.all-tutorials"
             />
-        </div>
+        </button>
         {totalSteps > 1 ? (
             <div className={styles.stepsList}>
                 {Array(totalSteps).fill(0)
@@ -46,7 +48,7 @@ const CardHeader = ({onCloseCards, onShrinkExpandCards, onShowAll, totalSteps, s
             </div>
         ) : null}
         <div className={styles.headerButtonsRight}>
-            <div
+            <button
                 className={styles.shrinkExpandButton}
                 onClick={onShrinkExpandCards}
             >
@@ -66,8 +68,8 @@ const CardHeader = ({onCloseCards, onShrinkExpandCards, onShowAll, totalSteps, s
                         id="gui.cards.expand"
                     />
                 }
-            </div>
-            <div
+            </button>
+            <button
                 className={styles.removeButton}
                 onClick={onCloseCards}
             >
@@ -80,7 +82,7 @@ const CardHeader = ({onCloseCards, onShrinkExpandCards, onShowAll, totalSteps, s
                     description="Title for button to close how-to card"
                     id="gui.cards.close"
                 />
-            </div>
+            </button>
         </div>
     </div>
 );
@@ -192,7 +194,7 @@ const NextPrevButtons = ({isRtl, onNextStep, onPrevStep, expanded}) => (
         {onNextStep ? (
             <div>
                 <div className={expanded ? (isRtl ? styles.leftCard : styles.rightCard) : styles.hidden} />
-                <div
+                <button
                     className={expanded ? (isRtl ? styles.leftButton : styles.rightButton) : styles.hidden}
                     onClick={onNextStep}
                 >
@@ -200,13 +202,13 @@ const NextPrevButtons = ({isRtl, onNextStep, onPrevStep, expanded}) => (
                         draggable={false}
                         src={isRtl ? leftArrow : rightArrow}
                     />
-                </div>
+                </button>
             </div>
         ) : null}
         {onPrevStep ? (
             <div>
                 <div className={expanded ? (isRtl ? styles.rightCard : styles.leftCard) : styles.hidden} />
-                <div
+                <button
                     className={expanded ? (isRtl ? styles.rightButton : styles.leftButton) : styles.hidden}
                     onClick={onPrevStep}
                 >
@@ -214,7 +216,7 @@ const NextPrevButtons = ({isRtl, onNextStep, onPrevStep, expanded}) => (
                         draggable={false}
                         src={isRtl ? rightArrow : leftArrow}
                     />
-                </div>
+                </button>
             </div>
         ) : null}
     </Fragment>
@@ -369,6 +371,18 @@ const Cards = props => {
         ...posProps
     } = props;
     let {x, y} = posProps;
+
+    useEffect(() => {
+        const handleKeyDown = e => {
+            if (e.key === KEY.ESCAPE) {
+                onCloseCards();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onCloseCards]);
 
     if (activeDeckId === null) return;
 
