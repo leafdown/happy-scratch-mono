@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google" value="notranslate">
+  <link rel="shortcut icon" href="static/logo.png">
+  <title><%= htmlWebpackPlugin.options.title %></title>
+  <script>
+    // Lanqu Scratch GUI — stage 1 verification config.
+    // Full scratchConfig schema is documented in docs/easy-scratch3-migration-survey.md
+    // and the easy-scratch3/src/playground/index.ejs reference.
+    window.scratchConfig = {
+      session: {
+        token: '',
+        username: 'Username'
+      },
+      menuBar: {
+        languageButton: {
+          show: true,
+          defaultLanguage: 'zh-cn'
+        },
+        // Stage 4 verification: customButtons should render once MenuBar patch lands.
+        customButtons: [
+          {
+            show: true,
+            buttonName: '分享',
+            style: {
+              color: 'white',
+              background: 'hsla(30, 100%, 55%, 1)'
+            },
+            handleClick: () => {
+              console.log('分享按钮 clicked'); // eslint-disable-line no-console
+            }
+          }
+        ]
+      },
+      cloudData: {
+        enable: false,
+        id: 'create',
+        api: ''
+      },
+      backpack: {
+        enable: false,
+        api: ''
+      }
+    };
+  </script>
+</head>
+
+<body>
+  <div id="scratch">
+    <p>Loading……</p>
+  </div>
+</body>
+
+</html>
