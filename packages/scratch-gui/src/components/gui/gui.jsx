@@ -141,6 +141,7 @@ const GUIComponent = props => {
         canShare,
         canUseCloud,
         children,
+        customButtons,
         connectionModalVisible,
         costumeLibraryVisible,
         costumesTabVisible,
@@ -163,6 +164,7 @@ const GUIComponent = props => {
         onSetManualThumbnail,
         onSetManualThumbnailButtonClick,
         menuBarHidden,
+        menuBarStyle,
         renderLogin,
         onClickAbout,
         onLogOut,
@@ -355,6 +357,8 @@ const GUIComponent = props => {
                             isShared={isShared}
                             isTotallyNormal={isTotallyNormal}
                             logo={logo}
+                            menuBarStyle={menuBarStyle}
+                            customButtons={customButtons}
                             renderLogin={renderLogin}
                             showComingSoon={showComingSoon}
                             onClickAbout={onClickAbout}
@@ -605,6 +609,12 @@ GUIComponent.propTypes = {
     children: PropTypes.node,
     costumeLibraryVisible: PropTypes.bool,
     costumesTabVisible: PropTypes.bool,
+    customButtons: PropTypes.arrayOf(PropTypes.shape({
+        show: PropTypes.bool,
+        buttonName: PropTypes.string,
+        style: PropTypes.object,
+        handleClick: PropTypes.func
+    })),
     debugModalVisible: PropTypes.bool,
     hasActiveMembership: PropTypes.bool,
     onDebugModalClose: PropTypes.func,
@@ -620,6 +630,7 @@ GUIComponent.propTypes = {
     loading: PropTypes.bool,
     logo: PropTypes.string,
     manuallySaveThumbnails: PropTypes.bool,
+    menuBarStyle: PropTypes.object,
     onSetManualThumbnail: PropTypes.func,
     onSetManualThumbnailButtonClick: PropTypes.func,
     menuBarHidden: PropTypes.bool,

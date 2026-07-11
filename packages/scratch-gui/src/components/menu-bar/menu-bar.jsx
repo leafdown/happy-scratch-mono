@@ -321,6 +321,7 @@ class MenuBar extends React.Component {
                     this.props.className,
                     styles.menuBar
                 )}
+                style={this.props.menuBarStyle}
                 aria-label={this.props.ariaLabel}
                 role={this.props.ariaRole}
                 element="header"
@@ -456,6 +457,17 @@ class MenuBar extends React.Component {
                         ) : [])}
                     </div>
                     <Divider className={classNames(styles.divider)} />
+                    {(this.props.customButtons || []).filter(b => b && b.show).map((button, index) => (
+                        <div className={styles.fileGroup} key={`custom-button-${index}`}>
+                            <button
+                                className={classNames(styles.menuBarItem, styles.noOffset, styles.hoverable)}
+                                style={button.style}
+                                onClick={button.handleClick}
+                            >
+                                <span>{button.buttonName}</span>
+                            </button>
+                        </div>
+                    ))}
                     <div className={styles.fileGroup}>
                         <button
                             aria-label={this.props.intl.formatMessage(ariaMessages.tutorials)}
@@ -653,6 +665,12 @@ MenuBar.propTypes = {
     canCreateCopy: PropTypes.bool,
     canCreateNew: PropTypes.bool,
     canEditTitle: PropTypes.bool,
+    customButtons: PropTypes.arrayOf(PropTypes.shape({
+        show: PropTypes.bool,
+        buttonName: PropTypes.string,
+        style: PropTypes.object,
+        handleClick: PropTypes.func
+    })),
     canManageFiles: PropTypes.bool,
     canRemix: PropTypes.bool,
     canSave: PropTypes.bool,
@@ -671,6 +689,7 @@ MenuBar.propTypes = {
     locale: PropTypes.string.isRequired,
     loginMenuOpen: PropTypes.bool,
     logo: PropTypes.string,
+    menuBarStyle: PropTypes.object,
     mode1920: PropTypes.bool,
     mode1990: PropTypes.bool,
     mode2020: PropTypes.bool,
