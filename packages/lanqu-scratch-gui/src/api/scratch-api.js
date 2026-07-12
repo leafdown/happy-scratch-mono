@@ -60,12 +60,47 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
         registerApi () {
             window.scratch._config = config;
             const dispatch = store.dispatch;
+            // Merge Chinese translations for messages scratch-l10n's zh-cn pack
+            // is missing (Settings menu and its sub-items). Dispatched as
+            // UPDATE_LOCALES so the merged messagesByLocale takes effect.
+            this.applyLocaleOverrides();
             window.scratch.setPlayerOnly = isPlayerOnly => dispatch(setPlayer(isPlayerOnly));
             window.scratch.setFullScreen = isFullScreen => dispatch(setFullScreen(isFullScreen));
             window.scratch.setLocale = locale => dispatch(selectLocale(locale));
             // Trigger default project load (mirrors HashParserHOC's setProjectId('0')).
             // Without this the editor boots with an empty target list.
             dispatch(setProjectId(defaultProjectId));
+        }
+
+        applyLocaleOverrides () {
+            // Chinese translations for messages scratch-l10n's zh-cn pack is
+            // missing (mainly the Settings menu and sub-items). Merged into
+            // messagesByLocale via UPDATE_LOCALES so react-intl picks them up.
+            const zhOverrides = {
+                'gui.menuBar.settings': '设置',
+                'gui.aria.settingsMenu': '设置菜单',
+                'gui.menuBar.theme': '主题',
+                'gui.menuBar.colorMode': '色彩模式',
+                'gui.theme.default': '默认',
+                'gui.theme.dark': '深色',
+                'gui.theme.highContrast': '高对比度',
+                'gui.aria.languageMenu': '语言菜单'
+            };
+            try {
+                const state = store.getState();
+                const localesState = state.locales;
+                if (!localesState) return;
+                const mb = {...localesState.messagesByLocale};
+                if (mb['zh-cn']) {
+                    mb['zh-cn'] = {...mb['zh-cn'], ...zhOverrides};
+                }
+                store.dispatch({
+                    type: 'scratch-gui/locales/UPDATE_LOCALES',
+                    messagesByLocale: mb
+                });
+            } catch (e) {
+                // non-fatal: falls back to default translations
+            }
         }
 
         registerVmApi () {

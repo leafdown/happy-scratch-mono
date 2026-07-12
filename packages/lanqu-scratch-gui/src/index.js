@@ -81,6 +81,12 @@ const buildPatchProps = (config, extraProps = {}) => {
         if (config.menuBar.languageButton) {
             props.canChangeLanguage = config.menuBar.languageButton.show !== false;
         }
+        // Tutorials button visibility (helpButton.show). Debug button hidden
+        // by default (Lanqu editor doesn't expose it) unless menuBar.debugButton.show.
+        if (config.menuBar.helpButton) {
+            props.showTutorialsButton = config.menuBar.helpButton.show !== false;
+        }
+        props.showDebugButton = !!(config.menuBar.debugButton && config.menuBar.debugButton.show === true);
     }
 
     // Blocks (P3/P4): scale + hide config

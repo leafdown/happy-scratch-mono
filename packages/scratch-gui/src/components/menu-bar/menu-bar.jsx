@@ -458,17 +458,24 @@ class MenuBar extends React.Component {
                     </div>
                     <Divider className={classNames(styles.divider)} />
                     {(this.props.customButtons || []).filter(b => b && b.show).map((button, index) => (
-                        <div className={styles.fileGroup} key={`custom-button-${index}`}>
-                            <button
-                                className={classNames(styles.menuBarItem, styles.noOffset, styles.hoverable)}
-                                style={button.style}
-                                onClick={button.handleClick}
-                            >
-                                <span>{button.buttonName}</span>
-                            </button>
-                        </div>
+                        <button
+                            className={classNames(styles.menuBarItem, styles.noOffset, styles.hoverable)}
+                            key={`custom-button-${index}`}
+                            style={{
+                                borderRadius: '4px',
+                                padding: '0 10px',
+                                margin: '0 4px',
+                                height: '28px',
+                                alignSelf: 'center',
+                                ...button.style
+                            }}
+                            onClick={button.handleClick}
+                        >
+                            <span>{button.buttonName}</span>
+                        </button>
                     ))}
                     <div className={styles.fileGroup}>
+                        {this.props.showTutorialsButton !== false && (
                         <button
                             aria-label={this.props.intl.formatMessage(ariaMessages.tutorials)}
                             className={
@@ -484,6 +491,8 @@ class MenuBar extends React.Component {
                                 <FormattedMessage {...ariaMessages.tutorials} />
                             </span>
                         </button>
+                        )}
+                        {this.props.showDebugButton !== false && (
                         <button
                             aria-label={this.props.intl.formatMessage(ariaMessages.debug)}
                             className={classNames(styles.menuBarItem, styles.noOffset, styles.hoverable)}
@@ -497,6 +506,7 @@ class MenuBar extends React.Component {
                                 <FormattedMessage {...ariaMessages.debug} />
                             </span>
                         </button>
+                        )}
                     </div>
                 </div>
 
@@ -727,6 +737,8 @@ MenuBar.propTypes = {
     renderLogin: PropTypes.func,
     shouldSaveBeforeTransition: PropTypes.func,
     showComingSoon: PropTypes.bool,
+    showDebugButton: PropTypes.bool,
+    showTutorialsButton: PropTypes.bool,
     username: PropTypes.string,
     avatarBadge: PropTypes.number,
     userOwnsProject: PropTypes.bool,
@@ -738,6 +750,8 @@ MenuBar.propTypes = {
 
 MenuBar.defaultProps = {
     logo: scratchLogo,
+    showDebugButton: true,
+    showTutorialsButton: true,
     onShare: () => {}
 };
 
