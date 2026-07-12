@@ -112,10 +112,29 @@ const buildPatchProps = (config, extraProps = {}) => {
         };
     }
 
-    // Logo (native onClickLogo prop)
+    // Logo (native props: logo URL + onClickLogo)
     if (config.logo) {
+        if (config.logo.url) {
+            props.logo = config.logo.url;
+        }
         if (config.logo.handleClickLogo) {
             props.onClickLogo = config.logo.handleClickLogo;
+        }
+    }
+
+    // Account menu (native accountMenuOptions prop): user avatar + my stuff link.
+    // Maps scratchConfig.menuBar.userAvatar / myStuff to v14's AccountMenuOptions.
+    if (config.menuBar && (config.menuBar.userAvatar || config.menuBar.myStuff)) {
+        const ua = config.menuBar.userAvatar || {};
+        const ms = config.menuBar.myStuff || {};
+        props.accountMenuOptions = {
+            canHaveSession: ua.show !== false,
+            avatarUrl: ua.avatar,
+            myStuffUrl: ms.show !== false ? (ms.url || '') : undefined,
+            accountSettingsUrl: '/account/settings/BaseSetting'
+        };
+        if (ua.username) {
+            props.username = ua.username;
         }
     }
 

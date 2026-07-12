@@ -340,7 +340,7 @@ class MenuBar extends React.Component {
                                     [styles.clickable]: typeof this.props.onClickLogo !== 'undefined'
                                 })}
                                 draggable={false}
-                                src={getScratchLogo(this.props.platform)}
+                                src={this.props.logo || getScratchLogo(this.props.platform)}
                             />
                         </button>
                         {(this.props.canChangeColorMode || this.props.canChangeLanguage || this.props.canChangeTheme) &&

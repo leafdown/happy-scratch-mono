@@ -21,12 +21,34 @@ const randomId = () => {
     return str;
 };
 
-// v14 BackpackItem requires thumbnailUrl/bodyUrl; Lanqu returns base64 inline.
-const withFullUrls = item => ({
-    ...item,
-    thumbnailUrl: item.thumbnailUrl || (item.thumbnail ? `data:image/jpeg;base64,${item.thumbnail}` : ''),
-    bodyUrl: item.bodyUrl || (item.body ? `data:${item.mime};base64,${item.body}` : '')
-});
+// v14 BackpackItem requires thumbnailUrl/bodyUrl. The Lanqu backend returns
+// thumbnail/body as URLs (protocol-relative or absolute), not base64 — so build
+// the display URL directly rather than wrapping in a data: URL.
+const isDataOrUrl = s => /^(data:|https?:|\/\/)/.test(s);
+// Local-dev: route storage.lanqu.vip through /storage-cdn/ proxy (vue dev server)
+// so v14's handleDrop fetch of bodyUrl doesn't hit CORS. No-op in production.
+const proxyStorageUrl = url => {
+    if (typeof url !== 'string') return url;
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)/.test(location.href) &&
+        /^(https?:)?\/\/storage\.lanqu\.vip/.test(url)) {
+        return url.replace(/^(https?:)?\/\/storage\.lanqu\.vip/, '/storage-cdn');
+    }
+    return url;
+};
+const withFullUrls = item => {
+    const mime = item.mime || 'image/png';
+    const ext = (mime.match(/\/(\w+)/) || [, 'png'])[1];
+    const thumb = item.thumbnailUrl ||
+        (item.thumbnail && isDataOrUrl(item.thumbnail) ? item.thumbnail : '');
+    const body = item.bodyUrl ||
+        (item.body && isDataOrUrl(item.body) ? item.body : '');
+    return {
+        ...item,
+        body: item.body || `${item.id}.${ext}`,
+        thumbnailUrl: thumb,
+        bodyUrl: proxyStorageUrl(body)
+    };
+};
 
 class LanquBackpackStorage {
     constructor ({host, session} = {}) {
@@ -123,7 +145,10 @@ class LanquBackpackStorage {
                 if (error || response.statusCode !== 200) {
                     return reject(new Error(String(response && response.statusCode)));
                 }
-                resolve(withFullUrls(response.body || entry));
+                // Merge so the returned BackpackItem always has the standard
+                // type/name fields the v14 UI needs (backend may omit them).
+                const saved = response.body || {};
+                resolve(withFullUrls({...entry, ...saved, type: entry.type, name: saved.name || entry.name}));
             });
         });
     }
