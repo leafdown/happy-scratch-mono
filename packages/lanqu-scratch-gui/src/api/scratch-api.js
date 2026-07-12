@@ -86,7 +86,8 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
                 'gui.theme.default': '默认',
                 'gui.theme.dark': '深色',
                 'gui.theme.highContrast': '高对比度',
-                'gui.aria.languageMenu': '语言菜单'
+                'gui.aria.languageMenu': '语言菜单',
+                'gui.sharedMessages.loadFromComputerTitle': '从电脑中加载'
             };
             try {
                 const state = store.getState();

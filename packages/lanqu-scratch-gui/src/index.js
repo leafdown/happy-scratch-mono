@@ -199,10 +199,13 @@ const injectCustomStyles = config => {
     style.textContent = `
         /* User avatar: white background, fully round */
         [class*="user-avatar"] [class*="user-thumbnail"],
-        [class*="account-info"] img[src*="avatar"] {
+        [class*="account-info"] img[src*="avatar"],
+        [class*="account-menu"] [class*="avatar"] {
             border-radius: 50% !important;
             background: #fff !important;
             object-fit: cover;
+            border: 2px solid #fff !important;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.15) !important;
         }
         /* Dropdown menus: match the customized menu bar color instead of the
            default purple ($looks-secondary = rgb(133,92,214)). */
