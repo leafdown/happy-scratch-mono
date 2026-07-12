@@ -49,7 +49,9 @@ const buildConfig = baseConfig.clone()
     .enableDevServer(process.env.PORT || 8602)
     .merge({
         entry: {
-            gui: './src/playground/render-gui.jsx'
+            gui: './src/playground/render-gui.jsx',
+            player: './src/playground/player.jsx',
+            blocksonly: './src/playground/blocks-only.jsx'
         },
         output: {
             path: path.resolve(__dirname, 'build'),
@@ -60,6 +62,18 @@ const buildConfig = baseConfig.clone()
         chunks: ['gui'],
         template: 'src/playground/index.ejs',
         title: 'Lanqu Scratch GUI'
+    }))
+    .addPlugin(new HtmlWebpackPlugin({
+        chunks: ['player'],
+        template: 'src/playground/index.ejs',
+        filename: 'player.html',
+        title: 'Lanqu Scratch GUI: Player'
+    }))
+    .addPlugin(new HtmlWebpackPlugin({
+        chunks: ['blocksonly'],
+        template: 'src/playground/index.ejs',
+        filename: 'blocks-only.html',
+        title: 'Lanqu Scratch GUI: Blocks Only'
     }))
     .addPlugin(new CopyWebpackPlugin({
         patterns: [
