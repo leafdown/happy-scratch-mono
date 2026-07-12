@@ -22,8 +22,8 @@ import {scratchApiHOC} from './api/scratch-api.js';
  * Build the wrapper HOC array. scratchApiHOC injects patch-driven props
  * (customButtons, blocksOptions, etc.) and registers window.scratch.* on mount.
  */
-const buildWrappers = config => [
-    scratchApiHOC(config)
+const buildWrappers = (config, store) => [
+    scratchApiHOC(config, store)
 ];
 
 /**
@@ -47,7 +47,7 @@ const createEasyRoot = (hostConfig, container) => {
 
     const state = new EditorState(editorStateParams, guiConfigFactory);
     const root = createStandaloneRoot(state, container, {
-        wrappers: buildWrappers(config)
+        wrappers: buildWrappers(config, state.store)
     });
 
     // Expose the original render but pre-bind the patch-driven props derived from
@@ -125,10 +125,8 @@ const buildPatchProps = (config, extraProps = {}) => {
         props.hasCloudPermission = true;
     }
 
-    // VM init / project loaded callbacks (native props)
-    if (config.handleVmInitialized) {
-        props.onVmInit = config.handleVmInitialized;
-    }
+    // Project loaded callback (native prop). onVmInit is intercepted by
+    // scratchApiHOC, which forwards to config.handleVmInitialized.
     if (config.handleProjectLoaded) {
         props.onProjectLoaded = config.handleProjectLoaded;
     }
