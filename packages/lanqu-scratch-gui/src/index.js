@@ -36,6 +36,10 @@ const buildWrappers = (config, store) => [
 const createEasyRoot = (hostConfig, container) => {
     const {config, editorStateParams, guiConfigFactory} = configToGui(hostConfig);
 
+    // Inject global style overrides for Lanqu visual tweaks (avatar shape,
+    // dropdown colors). These are additive CSS rules that don't change layout.
+    injectCustomStyles(config);
+
     // Patch P11: apply stage size/scale overrides before the editor boots.
     if (config.stageArea) {
         setCustomLayout({
@@ -176,6 +180,37 @@ const EasyScratch = props => {
     // Component form defers to createEasyRoot on mount. Stage 6 will flesh this
     // out; for now the imperative createEasyRoot is the primary entry point.
     throw new Error('EasyScratch component form is not implemented yet; use createEasyRoot');
+};
+
+/**
+ * Inject global CSS overrides for Lanqu visual tweaks. Additive — only adds
+ * rules, doesn't remove scratch-gui defaults. Idempotent (guarded by a marker).
+ */
+const injectCustomStyles = config => {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById('lanqu-custom-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'lanqu-custom-styles';
+    const menuBg = (config.menuBar && config.menuBar.style && config.menuBar.style.background) ||
+        'hsla(215, 100%, 65%, 1)';
+    // User avatar: white background, fully round.
+    // Dropdown menus: inherit the menu bar background instead of the default
+    // purple ($looks-secondary) so they match the customized menu bar color.
+    style.textContent = `
+        /* User avatar: white background, fully round */
+        [class*="user-avatar"] [class*="user-thumbnail"],
+        [class*="account-info"] img[src*="avatar"] {
+            border-radius: 50% !important;
+            background: #fff !important;
+            object-fit: cover;
+        }
+        /* Dropdown menus: match the customized menu bar color instead of the
+           default purple ($looks-secondary = rgb(133,92,214)). */
+        [class*="menu_menu"] {
+            background-color: ${menuBg} !important;
+        }
+    `;
+    document.head.appendChild(style);
 };
 
 export {

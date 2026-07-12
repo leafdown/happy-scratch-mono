@@ -81,6 +81,8 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
                 'gui.aria.settingsMenu': '设置菜单',
                 'gui.menuBar.theme': '主题',
                 'gui.menuBar.colorMode': '色彩模式',
+                'gui.blockTheme.default': '默认',
+                'gui.blockTheme.catBlocks': '猫咪积木',
                 'gui.theme.default': '默认',
                 'gui.theme.dark': '深色',
                 'gui.theme.highContrast': '高对比度',
