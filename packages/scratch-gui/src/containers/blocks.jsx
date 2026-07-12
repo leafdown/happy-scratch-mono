@@ -433,7 +433,8 @@ class Blocks extends React.Component {
                 targetCostumes[targetCostumes.length - 1].name,
                 stageCostumes[stageCostumes.length - 1].name,
                 targetSounds.length > 0 ? targetSounds[targetSounds.length - 1].name : '',
-                getColorsForMode(this.props.colorMode)
+                getColorsForMode(this.props.colorMode),
+                this.props.blocksHideConfig
             );
         } catch {
             return null;
@@ -738,6 +739,10 @@ class Blocks extends React.Component {
 
 Blocks.propTypes = {
     anyModalVisible: PropTypes.bool,
+    blocksHideConfig: PropTypes.shape({
+        categories: PropTypes.arrayOf(PropTypes.string),
+        blocks: PropTypes.arrayOf(PropTypes.string)
+    }),
     canUseCloud: PropTypes.bool,
     customProceduresVisible: PropTypes.bool,
     extensionLibraryVisible: PropTypes.bool,

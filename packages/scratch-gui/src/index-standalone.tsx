@@ -21,6 +21,9 @@ export {default as LegacyCloudProvider} from './lib/cloud-provider';
 
 export {default as buildDefaultProject} from './lib/default-project';
 
+// Patch P11: expose layout override so the wrapper can set blocks scale / stage size.
+export {setCustomLayout} from './lib/layout-constants.js';
+
 // TODO: Better typing once ScratchGUI has types
 
 export type GUIProps = any; // ComponentPropsWithoutRef<typeof ScratchGUI>;

@@ -103,14 +103,21 @@ const StageHeaderComponent = function (props) {
         username,
         onShowSettingThumbnail,
         onShowThumbnailSuccess,
-        onShowThumbnailError
+        onShowThumbnailError,
+        stageHeaderConfig,
+        controlsConfig
     } = props;
     const intl = useIntl();
 
     const containerRef = useRef(null);
     const {trapFocus, releaseFocus} = useFocusTrap(containerRef, 'data-focusable');
 
+    // Patch P13: allow host to intercept fullscreen toggle (return true to proceed).
+    const beforeFull = stageHeaderConfig && stageHeaderConfig.onBeforeSetStageFull;
+    const beforeUnFull = stageHeaderConfig && stageHeaderConfig.onBeforeSetStageUnFull;
+
     const handleEnterFullScreen = useCallback(() => {
+        if (beforeFull && !beforeFull()) return;
         onSetStageFull();
         requestAnimationFrame(() => {
             trapFocus();
@@ -118,9 +125,10 @@ const StageHeaderComponent = function (props) {
     }, [onSetStageFull, trapFocus]);
 
     const handleExitFullScreen = useCallback(() => {
+        if (beforeUnFull && !beforeUnFull()) return;
         onSetStageUnFull();
         releaseFocus();
-    }, [onSetStageUnFull, releaseFocus]);
+    }, [onSetStageUnFull, releaseFocus, beforeUnFull]);
 
     let header = null;
 
@@ -249,6 +257,7 @@ const StageHeaderComponent = function (props) {
                 >
                     <Controls
                         isFullScreen={isFullScreen}
+                        controlsConfig={controlsConfig}
                         vm={vm}
                     />
                     {stageButton}
@@ -284,6 +293,7 @@ const StageHeaderComponent = function (props) {
                 <Box className={styles.stageMenuWrapper}>
                     <Controls
                         isFullScreen={isFullScreen}
+                        controlsConfig={controlsConfig}
                         vm={vm}
                     />
                     <div className={styles.stageSizeRow}>
@@ -333,6 +343,7 @@ const StageHeaderComponent = function (props) {
                         />
                         {stageControls}
                         <div className={styles.rightSection}>
+                            {(!stageHeaderConfig || stageHeaderConfig.showFullscreenButton !== false) && (
                             <Button
                                 className={styles.stageButton}
                                 onClick={handleEnterFullScreen}
@@ -346,6 +357,7 @@ const StageHeaderComponent = function (props) {
                                     title={intl.formatMessage(messages.fullscreenControl)}
                                 />
                             </Button>
+                            )}
                         </div>
                     </div>
                 </Box>
@@ -378,7 +390,12 @@ StageHeaderComponent.propTypes = {
     username: PropTypes.string,
     onShowSettingThumbnail: PropTypes.func,
     onShowThumbnailError: PropTypes.func,
-    onShowThumbnailSuccess: PropTypes.func
+    onShowThumbnailSuccess: PropTypes.func,
+    stageHeaderConfig: PropTypes.shape({
+        showFullscreenButton: PropTypes.bool,
+        onBeforeSetStageFull: PropTypes.func,
+        onBeforeSetStageUnFull: PropTypes.func
+    })
 };
 
 StageHeaderComponent.defaultProps = {

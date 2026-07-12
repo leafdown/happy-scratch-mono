@@ -127,6 +127,8 @@ const GUIComponent = props => {
         backpackHost,
         backpackVisible,
         blocksId,
+        blocksHideConfig,
+        blocksOptions,
         blocksTabVisible,
         cardsVisible,
         canChangeLanguage,
@@ -196,6 +198,8 @@ const GUIComponent = props => {
         showNewFeatureCallouts,
         soundsTabVisible,
         stageSizeMode,
+        stageHeaderConfig,
+        controlsConfig,
         targetIsStage,
         telemetryModalVisible,
         colorMode,
@@ -484,8 +488,10 @@ const GUIComponent = props => {
                                             grow={1}
                                             isVisible={blocksTabVisible}
                                             options={{
-                                                media: `${basePath}static/${colorModeMap[colorMode].blocksMediaFolder}/`
+                                                media: `${basePath}static/${colorModeMap[colorMode].blocksMediaFolder}/`,
+                                                ...blocksOptions
                                             }}
+                                            blocksHideConfig={blocksHideConfig}
                                             stageSize={stageSize}
                                             theme={theme}
                                             vm={vm}
@@ -557,6 +563,8 @@ const GUIComponent = props => {
                                 userOwnsProject={userOwnsProject}
                                 username={username}
                                 onUpdateProjectThumbnail={onUpdateProjectThumbnail}
+                                stageHeaderConfig={stageHeaderConfig}
+                                controlsConfig={controlsConfig}
                             />
                             <Box
                                 className={styles.targetWrapper}
@@ -607,6 +615,11 @@ GUIComponent.propTypes = {
     canUseCloud: PropTypes.bool,
     cardsVisible: PropTypes.bool,
     children: PropTypes.node,
+    blocksHideConfig: PropTypes.shape({
+        categories: PropTypes.arrayOf(PropTypes.string),
+        blocks: PropTypes.arrayOf(PropTypes.string)
+    }),
+    blocksOptions: PropTypes.object,
     costumeLibraryVisible: PropTypes.bool,
     costumesTabVisible: PropTypes.bool,
     customButtons: PropTypes.arrayOf(PropTypes.shape({
@@ -665,6 +678,17 @@ GUIComponent.propTypes = {
     showNewFeatureCallouts: PropTypes.bool,
     soundsTabVisible: PropTypes.bool,
     stageSizeMode: PropTypes.oneOf(Object.keys(STAGE_SIZE_MODES)),
+    stageHeaderConfig: PropTypes.shape({
+        showFullscreenButton: PropTypes.bool,
+        onBeforeSetStageFull: PropTypes.func,
+        onBeforeSetStageUnFull: PropTypes.func
+    }),
+    controlsConfig: PropTypes.shape({
+        showStartButton: PropTypes.bool,
+        showStopButton: PropTypes.bool,
+        onBeforeStart: PropTypes.func,
+        onBeforeStop: PropTypes.func
+    }),
     setPlatform: PropTypes.func,
     targetIsStage: PropTypes.bool,
     telemetryModalVisible: PropTypes.bool,

@@ -28,6 +28,8 @@ const StageWrapperComponent = function (props) {
         userOwnsProject,
         stageSize,
         showNewFeatureCallouts,
+        stageHeaderConfig,
+        controlsConfig,
         vm
     } = props;
     return (
@@ -52,6 +54,8 @@ const StageWrapperComponent = function (props) {
                     onUpdateProjectThumbnail={onUpdateProjectThumbnail}
                     showNewFeatureCallouts={showNewFeatureCallouts}
                     stageSize={stageSize}
+                    stageHeaderConfig={stageHeaderConfig}
+                    controlsConfig={controlsConfig}
                     vm={vm}
                 />
             </Box>

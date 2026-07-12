@@ -795,9 +795,34 @@ const xmlClose = '</xml>';
  * @returns {string} - a ScratchBlocks-style XML document for the contents of the toolbox.
  */
 const makeToolboxXML = function (isInitialSetup, isStage = true, targetId, categoriesXML = [],
-    costumeName = '', backdropName = '', soundName = '', colors = defaultColors) {
+    costumeName = '', backdropName = '', soundName = '', colors = defaultColors, hideConfig) {
     isStage = isInitialSetup || isStage;
     const gap = [categorySeparator];
+
+    // Patch P9: hide categories/blocks. Defaults to no filtering (official behavior).
+    const hideCategories = (hideConfig && hideConfig.categories) || [];
+    const hideBlocks = (hideConfig && hideConfig.blocks) || [];
+    // Map user-facing category names to the internal category id used by moveCategory.
+    const categoryNameToId = {
+        motion: 'motion',
+        looks: 'looks',
+        sound: 'sound',
+        events: 'event',
+        control: 'control',
+        sensing: 'sensing',
+        operators: 'operators',
+        variables: 'data',
+        myBlocks: 'procedures'
+    };
+    const hideCategoryIds = new Set(
+        hideCategories.map(name => categoryNameToId[name] || name)
+    );
+    // Remove <block type="xxx"> ... </block> for any type in hideBlocks.
+    const filterBlocks = xml => {
+        if (!xml || hideBlocks.length === 0) return xml;
+        return xml.replace(/<block type="([^"]+)"[^>]*>[\s\S]*?<\/block>/g, (match, type) =>
+            hideBlocks.includes(type) ? '' : match);
+    };
 
     costumeName = xmlEscape(costumeName);
     backdropName = xmlEscape(backdropName);
@@ -813,16 +838,25 @@ const makeToolboxXML = function (isInitialSetup, isStage = true, targetId, categ
         }
         // return `undefined`
     };
-    const motionXML = moveCategory('motion') || motion(isInitialSetup, isStage, targetId, colors.motion);
-    const looksXML = moveCategory('looks') ||
-        looks(isInitialSetup, isStage, targetId, costumeName, backdropName, colors.looks);
-    const soundXML = moveCategory('sound') || sound(isInitialSetup, isStage, targetId, soundName, colors.sounds);
-    const eventsXML = moveCategory('event') || events(isInitialSetup, isStage, targetId, colors.event);
-    const controlXML = moveCategory('control') || control(isInitialSetup, isStage, targetId, colors.control);
-    const sensingXML = moveCategory('sensing') || sensing(isInitialSetup, isStage, targetId, colors.sensing);
-    const operatorsXML = moveCategory('operators') || operators(isInitialSetup, isStage, targetId, colors.operators);
-    const variablesXML = moveCategory('data') || variables(isInitialSetup, isStage, targetId, colors.data);
-    const myBlocksXML = moveCategory('procedures') || myBlocks(isInitialSetup, isStage, targetId, colors.more);
+    const motionXML = hideCategoryIds.has('motion') ? '' :
+        (moveCategory('motion') || filterBlocks(motion(isInitialSetup, isStage, targetId, colors.motion)));
+    const looksXML = hideCategoryIds.has('looks') ? '' :
+        (moveCategory('looks') ||
+            filterBlocks(looks(isInitialSetup, isStage, targetId, costumeName, backdropName, colors.looks)));
+    const soundXML = hideCategoryIds.has('sound') ? '' :
+        (moveCategory('sound') || filterBlocks(sound(isInitialSetup, isStage, targetId, soundName, colors.sounds)));
+    const eventsXML = hideCategoryIds.has('event') ? '' :
+        (moveCategory('event') || filterBlocks(events(isInitialSetup, isStage, targetId, colors.event)));
+    const controlXML = hideCategoryIds.has('control') ? '' :
+        (moveCategory('control') || filterBlocks(control(isInitialSetup, isStage, targetId, colors.control)));
+    const sensingXML = hideCategoryIds.has('sensing') ? '' :
+        (moveCategory('sensing') || filterBlocks(sensing(isInitialSetup, isStage, targetId, colors.sensing)));
+    const operatorsXML = hideCategoryIds.has('operators') ? '' :
+        (moveCategory('operators') || filterBlocks(operators(isInitialSetup, isStage, targetId, colors.operators)));
+    const variablesXML = hideCategoryIds.has('data') ? '' :
+        (moveCategory('data') || filterBlocks(variables(isInitialSetup, isStage, targetId, colors.data)));
+    const myBlocksXML = hideCategoryIds.has('procedures') ? '' :
+        (moveCategory('procedures') || filterBlocks(myBlocks(isInitialSetup, isStage, targetId, colors.more)));
 
     const everything = [
         xmlOpen,

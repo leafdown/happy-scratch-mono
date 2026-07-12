@@ -16,6 +16,9 @@ class Controls extends React.Component {
     }
     handleGreenFlagClick (e) {
         e.preventDefault();
+        // Patch P12: allow host to intercept (return true to proceed).
+        const before = this.props.controlsConfig && this.props.controlsConfig.onBeforeStart;
+        if (before && !before()) return;
         if (e.shiftKey) {
             this.props.vm.setTurboMode(!this.props.turbo);
         } else {
@@ -27,6 +30,9 @@ class Controls extends React.Component {
     }
     handleStopAllClick (e) {
         e.preventDefault();
+        // Patch P12: allow host to intercept (return true to proceed).
+        const before = this.props.controlsConfig && this.props.controlsConfig.onBeforeStop;
+        if (before && !before()) return;
         this.props.vm.stopAll();
     }
     render () {
@@ -36,6 +42,7 @@ class Controls extends React.Component {
             projectRunning,
             turbo,
             isFullScreen,
+            controlsConfig,
             ...props
         } = this.props;
         return (
@@ -46,12 +53,20 @@ class Controls extends React.Component {
                 onGreenFlagClick={this.handleGreenFlagClick}
                 onStopAllClick={this.handleStopAllClick}
                 isFullScreen={isFullScreen}
+                showStartButton={!controlsConfig || controlsConfig.showStartButton !== false}
+                showStopButton={!controlsConfig || controlsConfig.showStopButton !== false}
             />
         );
     }
 }
 
 Controls.propTypes = {
+    controlsConfig: PropTypes.shape({
+        showStartButton: PropTypes.bool,
+        showStopButton: PropTypes.bool,
+        onBeforeStart: PropTypes.func,
+        onBeforeStop: PropTypes.func
+    }),
     isFullScreen: PropTypes.bool,
     isStarted: PropTypes.bool.isRequired,
     projectRunning: PropTypes.bool.isRequired,

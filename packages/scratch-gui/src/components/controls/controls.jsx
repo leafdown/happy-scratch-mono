@@ -30,6 +30,8 @@ const Controls = function (props) {
         onStopAllClick,
         turbo,
         isFullScreen,
+        showStartButton,
+        showStopButton,
         ...componentProps
     } = props;
     const intl = useIntl();
@@ -38,18 +40,22 @@ const Controls = function (props) {
             className={classNames(styles.controlsContainer, className)}
             {...componentProps}
         >
-            <GreenFlag
-                active={active}
-                title={intl.formatMessage(messages.goTitle)}
-                onClick={onGreenFlagClick}
-                isFullScreen={isFullScreen}
-            />
-            <StopAll
-                active={active}
-                title={intl.formatMessage(messages.stopTitle)}
-                onClick={onStopAllClick}
-                isFullScreen={isFullScreen}
-            />
+            {showStartButton !== false && (
+                <GreenFlag
+                    active={active}
+                    title={intl.formatMessage(messages.goTitle)}
+                    onClick={onGreenFlagClick}
+                    isFullScreen={isFullScreen}
+                />
+            )}
+            {showStopButton !== false && (
+                <StopAll
+                    active={active}
+                    title={intl.formatMessage(messages.stopTitle)}
+                    onClick={onStopAllClick}
+                    isFullScreen={isFullScreen}
+                />
+            )}
             {turbo ? (
                 <TurboMode />
             ) : null}
@@ -63,6 +69,8 @@ Controls.propTypes = {
     className: PropTypes.string,
     onGreenFlagClick: PropTypes.func.isRequired,
     onStopAllClick: PropTypes.func.isRequired,
+    showStartButton: PropTypes.bool,
+    showStopButton: PropTypes.bool,
     turbo: PropTypes.bool
 };
 
