@@ -6,7 +6,7 @@ import 'es6-object-assign/auto';
 import {createEasyRoot} from '../index.js';
 import {mergeConfig} from '../config/default-config.js';
 
-import './render-gui.css';
+import './render-gui.raw.css';
 
 const appTarget = document.getElementById('scratch');
 if (appTarget) {
