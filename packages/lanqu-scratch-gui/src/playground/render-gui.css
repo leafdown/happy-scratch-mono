@@ -1,5 +1,13 @@
-/* Playground container styles */
+/* Playground container styles — mirrors scratch-gui's playground/index.css.
+   scratch-gui's CSS uses height:100% chains, so html/body/.app need full height. */
+html,
+body,
 .app {
     width: 100%;
     height: 100%;
+    margin: 0;
+    min-width: 1024px;
+    min-height: 640px; /* Min height to fit sprite/backdrop button */
 }
+
+* { box-sizing: border-box; }
