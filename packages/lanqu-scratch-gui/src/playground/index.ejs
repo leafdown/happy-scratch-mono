@@ -36,6 +36,19 @@
           }
         ]
       },
+      blocks: {
+        scale: 0.8,
+        hideCatagorys: ['sensing'],  // stage 5: hide sensing category
+        hideBlocks: []
+      },
+      stageArea: {
+        fullscreenButton: { show: true },
+        startButton: { show: true },
+        stopButton: { show: true },
+        scale: 1,
+        width: 480,
+        height: 360
+      },
       cloudData: {
         enable: false,
         id: 'create',
@@ -44,6 +57,9 @@
       backpack: {
         enable: false,
         api: ''
+      },
+      handleVmInitialized: (vm) => {
+        window.vm = vm;
       }
     };
   </script>

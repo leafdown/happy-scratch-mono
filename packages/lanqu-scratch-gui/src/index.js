@@ -12,7 +12,8 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {
     EditorState,
-    createStandaloneRoot
+    createStandaloneRoot,
+    setCustomLayout
 } from '@scratch/scratch-gui/standalone';
 import {configToGui} from './config/config-to-gui.js';
 import {scratchApiHOC} from './api/scratch-api.js';
@@ -34,6 +35,16 @@ const buildWrappers = config => [
  */
 const createEasyRoot = (hostConfig, container) => {
     const {config, editorStateParams, guiConfigFactory} = configToGui(hostConfig);
+
+    // Patch P11: apply stage size/scale overrides before the editor boots.
+    if (config.stageArea) {
+        setCustomLayout({
+            stageScale: config.stageArea.scale,
+            stageWidth: config.stageArea.width,
+            stageHeight: config.stageArea.height
+        });
+    }
+
     const state = new EditorState(editorStateParams, guiConfigFactory);
     const root = createStandaloneRoot(state, container, {
         wrappers: buildWrappers(config)
