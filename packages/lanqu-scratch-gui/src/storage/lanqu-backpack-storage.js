@@ -31,7 +31,8 @@ const withFullUrls = item => ({
 class LanquBackpackStorage {
     constructor ({host, session} = {}) {
         this.host = host || '';
-        this.session = session || null;
+        this.defaultSession = session || null;
+        this.session = this.defaultSession;
     }
 
     setHost (host) {
@@ -39,7 +40,11 @@ class LanquBackpackStorage {
     }
 
     setSession (session) {
-        this.session = session;
+        // v14's Backpack container calls setSession(null) when redux has no session
+        // (we don't populate redux session state — the Lanqu token lives in
+        // scratchConfig). Fall back to the config session so list/save carry the
+        // X-Access-Token from scratchConfig.session.token.
+        this.session = session || this.defaultSession;
     }
 
     get useLocal () {
