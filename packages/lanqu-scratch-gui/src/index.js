@@ -119,6 +119,16 @@ const buildPatchProps = (config, extraProps = {}) => {
         }
     }
 
+    // Backpack (native props): show UI when enabled. backpackConfigured reflects
+    // whether a storage backend exists (HTTP api or localStorage fallback).
+    if (config.backpack && config.backpack.enable) {
+        props.backpackVisible = true;
+        props.backpackConfigured = true;
+        if (config.backpack.api) {
+            props.backpackHost = config.backpack.api;
+        }
+    }
+
     // Cloud host (native prop, consumed by cloudManagerHOC)
     if (config.cloudData && config.cloudData.enable && config.cloudData.api) {
         props.cloudHost = config.cloudData.api;
