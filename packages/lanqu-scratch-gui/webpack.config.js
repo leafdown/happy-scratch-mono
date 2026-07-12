@@ -94,6 +94,27 @@ const buildConfig = baseConfig.clone()
                 context: '../../node_modules/@scratch/scratch-vm/dist/web',
                 from: 'extension-worker.{js,js.map}',
                 noErrorOnMissing: true
+            },
+            {
+                // scratch-storage fetch workers (loaded at runtime for asset fetches)
+                context: '../../node_modules/scratch-storage/dist/web',
+                from: 'chunks/fetch-worker.*.{js,js.map}',
+                to: 'chunks/[name][ext]',
+                noErrorOnMissing: true
+            },
+            {
+                // scratch-gui built assets: tutorial icons, library images, etc.
+                context: '../scratch-gui/dist',
+                from: 'static/**/*',
+                to: '.',
+                noErrorOnMissing: true
+            },
+            {
+                // scratch-gui built chunks: tutorial steps, fetch-worker variants
+                context: '../scratch-gui/dist',
+                from: 'chunks/**/*',
+                to: '.',
+                noErrorOnMissing: true
             }
         ]
     }));

@@ -12,7 +12,9 @@ import bindAll from 'lodash.bindall';
 import {
     setPlayer,
     setFullScreen,
-    selectLocale
+    selectLocale,
+    setProjectId,
+    defaultProjectId
 } from '@scratch/scratch-gui/standalone';
 
 const scratchApiHOC = (config, store) => WrappedComponent => {
@@ -51,6 +53,9 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
             window.scratch.setPlayerOnly = isPlayerOnly => dispatch(setPlayer(isPlayerOnly));
             window.scratch.setFullScreen = isFullScreen => dispatch(setFullScreen(isFullScreen));
             window.scratch.setLocale = locale => dispatch(selectLocale(locale));
+            // Trigger default project load (mirrors HashParserHOC's setProjectId('0')).
+            // Without this the editor boots with an empty target list.
+            dispatch(setProjectId(defaultProjectId));
         }
 
         registerVmApi () {

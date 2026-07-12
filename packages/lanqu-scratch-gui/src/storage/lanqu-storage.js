@@ -10,6 +10,7 @@
  * host configuration; stage 1 just needs a working storage so the editor renders.
  */
 import {ScratchStorage} from 'scratch-storage';
+import {buildDefaultProject} from '@scratch/scratch-gui/standalone';
 import {LanquBackpackStorage} from './lanqu-backpack-storage.js';
 import {LanquCloudProvider} from './lanqu-cloud-provider.js';
 
@@ -49,6 +50,18 @@ const createLanquStorage = config => {
         [scratchStorage.AssetType.Sound],
         asset => `static/extension-assets/scratch3_music/${asset.assetId}.${asset.dataFormat}`
     );
+
+    // Cache the default project assets into the builtin helper so that
+    // storage.load(Project, '0') resolves the default project (mirrors
+    // LegacyStorage.cacheDefaultProject). Without this the editor boots with
+    // an empty target list.
+    const defaultProjectAssets = buildDefaultProject();
+    defaultProjectAssets.forEach(asset => scratchStorage.builtinHelper._store(
+        scratchStorage.AssetType[asset.assetType],
+        scratchStorage.DataFormat[asset.dataFormat],
+        asset.data,
+        asset.id
+    ));
 
     const backpackStorage = config.backpack && config.backpack.enable
         ? new LanquBackpackStorage({
