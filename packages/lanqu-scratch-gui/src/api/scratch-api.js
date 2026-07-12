@@ -44,6 +44,16 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
             // the toolbox (on target switch / project load). Hosts can force a
             // refresh via window.vm.emitWorkspaceUpdate() once the VM is ready.
             this.registerVmApi();
+            // Fire handleDefaultProjectLoaded once the first project (the default
+            // one) finishes loading — easy-scratch3 uses this hook to load a
+            // workId/workFile project over the default.
+            if (config.handleDefaultProjectLoaded && vm.runtime) {
+                const onFirstLoad = () => {
+                    vm.runtime.off('PROJECT_LOADED', onFirstLoad);
+                    try { config.handleDefaultProjectLoaded(); } catch (e) { console.error(e); } // eslint-disable-line no-console
+                };
+                vm.runtime.on('PROJECT_LOADED', onFirstLoad);
+            }
             if (config.handleVmInitialized) config.handleVmInitialized(vm);
         }
 
@@ -61,7 +71,16 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
         registerVmApi () {
             const vm = this.vm;
             window.scratch.loadProject = (url, callback) => {
-                fetch(url)
+                // Local-dev only: route storage CDN through /storage-cdn/ proxy to
+                // avoid CORS. Skipped in production (non-localhost origins).
+                // Matches http://, https://, and protocol-relative // storage.lanqu.vip.
+                let proxied = url;
+                if (typeof url === 'string' &&
+                    /^(https?:)?\/\/storage\.lanqu\.vip/.test(url) &&
+                    /^https?:\/\/(localhost|127\.0\.0\.1)/.test(location.href)) {
+                    proxied = url.replace(/^(https?:)?\/\/storage\.lanqu\.vip/, '/storage-cdn');
+                }
+                fetch(proxied)
                     .then(r => r.blob())
                     .then(blob => {
                         const reader = new FileReader();
