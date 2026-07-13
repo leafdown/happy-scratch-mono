@@ -2,7 +2,7 @@
 
 基于 [scratchfoundation/scratch-editor](https://github.com/scratchfoundation/scratch-editor) v14.1.0 的 Scratch 编辑器定制发行版，为蓝鹊（Lanqu）在线编程教学平台提供可嵌入的 Scratch 3.0 编辑器。
 
-本项目将 [easy-scratch3](https://github.com/open-scratch/easy-scratch3)（基于 2021 版 scratch-gui 的二次封装）的全部定制能力，以 **B 方案**（薄封装层 + 最小化源码 patch）移植到最新的 scratch-editor v14.1.0 之上。
+本项目将 [easy-scratch3](https://github.com/open-scratch/easy-scratch3)（基于 2021 版 scratch-gui 的二次封装）的全部定制能力，以 **方案**（薄封装层 + 最小化源码 patch）移植到最新的 scratch-editor v14.1.0 之上。
 
 ## 项目目标
 
@@ -15,7 +15,7 @@
 
 ```
 packages/
-├── scratch-gui/              # 官方 scratch-gui v14.1.0（含最小化 patch，见 PATCHES.md）
+├── scratch-gui/              # 官方 scratch-gui v14.1.0（含最小化 patch，见 [PATCHES.md](packages/scratch-gui/PATCHES.md)
 ├── scratch-vm/               # 官方 scratch-vm
 ├── scratch-render/           # 官方 scratch-render
 ├── scratch-svg-renderer/     # 官方 scratch-svg-renderer
