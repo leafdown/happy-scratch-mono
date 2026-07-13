@@ -15,7 +15,7 @@
 
 ```
 packages/
-├── scratch-gui/              # 官方 scratch-gui v14.1.0（含最小化 patch，见 [PATCHES.md](packages/scratch-gui/PATCHES.md)
+├── scratch-gui/              # 官方 scratch-gui v14.1.0（含最小化 patch，见 PATCHES.md
 ├── scratch-vm/               # 官方 scratch-vm
 ├── scratch-render/           # 官方 scratch-render
 ├── scratch-svg-renderer/     # 官方 scratch-svg-renderer
