@@ -61,7 +61,8 @@ const createEasyRoot = (hostConfig, container) => {
     return {
         ...root,
         render,
-        config
+        config,
+        store: state.store
     };
 };
 
@@ -72,6 +73,15 @@ const createEasyRoot = (hostConfig, container) => {
  */
 const buildPatchProps = (config, extraProps = {}) => {
     const props = {...extraProps};
+
+    // 允许编辑作品名(显示 ProjectTitleInput)
+    props.canEditTitle = true;
+    // 禁止从 scratch 菜单直接保存(交由自定义提交按钮)
+    props.canSave = false;
+    // 传递素材 host 地址,否则 GUI 组件挂载后会 setAssetHost 到默认 MIT
+    if (config.assets && config.assets.assetHost) {
+        props.assetHost = config.assets.assetHost;
+    }
 
     // MenuBar (P1/P2): customButtons + background style
     if (config.menuBar) {
@@ -193,10 +203,16 @@ const injectCustomStyles = config => {
     style.id = 'lanqu-custom-styles';
     const menuBg = (config.menuBar && config.menuBar.style && config.menuBar.style.background) ||
         'hsla(215, 100%, 65%, 1)';
-    // User avatar: white background, fully round.
-    // Dropdown menus: inherit the menu bar background instead of the default
-    // purple ($looks-secondary) so they match the customized menu bar color.
+    const logoUrl = (config.logo && config.logo.url) || '';
     style.textContent = `
+        /* Menu bar: apply configured background color */
+        header[role="banner"], [class*="menu-bar"] {
+            background: ${menuBg} !important;
+        }
+        /* Logo image */
+        #logo_img {
+            content: url(${logoUrl ? `"${logoUrl}"` : 'none'});
+        }
         /* User avatar: white background, fully round */
         [class*="user-avatar"] [class*="user-thumbnail"],
         [class*="account-info"] img[src*="avatar"],
@@ -208,9 +224,16 @@ const injectCustomStyles = config => {
             box-shadow: 0 0 0 1px rgba(0,0,0,0.15) !important;
         }
         /* Dropdown menus: match the customized menu bar color instead of the
-           default purple ($looks-secondary = rgb(133,92,214)). */
-        [class*="menu_menu"] {
+           default purple ($looks-secondary = rgb(133,92,214)).
+           Only target the dropdown UL (menu_menu_xxx), NOT action-menu_menu-container
+           (the sprite/backdrop add button) which also contains "menu_menu". */
+        ul[class*="menu_menu"]:not([class*="container"]) {
             background-color: ${menuBg} !important;
+        }
+        /* Full height layout for the editor */
+        [class*="gui_body-wrapper"] {
+            height: calc(100vh - 48px) !important;
+            min-height: calc(100vh - 48px) !important;
         }
     `;
     document.head.appendChild(style);

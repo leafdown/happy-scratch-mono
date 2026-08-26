@@ -7,6 +7,41 @@
   <meta name="google" value="notranslate">
   <link rel="shortcut icon" href="static/logo.png">
   <title><%= htmlWebpackPlugin.options.title %></title>
+  <% if (htmlWebpackPlugin.options.title.indexOf('Player') !== -1) { %>
+  <style>
+    /* player 专用:舞台居中对齐。
+       player.jsx 会把 #scratch 自身加上 class="app"(appTarget.className="app"),
+       因此这里的 .app 落在 #scratch 本身上,必须用 #scratch.app(后代选择器
+       #scratch .app 永远匹配不上)。全屏时用 bundle 内置的
+       .stage-wrapper_full-screen 类名补垂直居中(它只有 align-items:center)。 */
+    html,body{margin:0;padding:0;overflow:hidden;height:100%;}
+    /* render-gui.raw.css 打进 bundle 后会给 html/body/.app 设 min-width:1024px;
+       min-height:640px。在小视口下会把 #scratch 撑到 1024×640,舞台在其内部虽
+       居中但整体溢出视口 → 看起来贴右/下。必须清掉。 */
+    html,body{min-width:0 !important;min-height:0 !important;}
+    #scratch{width:100vw;height:100vh;}
+    #scratch.app{
+      min-width:0 !important;min-height:0 !important;width:100%;height:100%;
+      display:flex !important;flex-direction:column;align-items:center;justify-content:center;
+    }
+    #scratch.app > section{ margin:auto; }
+    #scratch .stage-wrapper_full-screen_VkfX3{ justify-content:center; }
+    /* 宿主页面自带全屏按钮(nofs=1)时,隐藏 Scratch GUI 内置全屏按钮,避免页面上
+       出现两个全屏按钮。showFullscreenButton 配置在 v14 standalone 渲染下不生效,
+       用 .nofs 类 + CSS 隐藏兜底。 */
+    .nofs button[aria-label="Enter full screen mode"],
+    .nofs button[aria-label*="full screen" i],
+    .nofs button[aria-label*="全屏"],
+    .nofs img[title="Full Screen Control"] { display: none !important; }
+  </style>
+  <script>
+    // nofs=1 → 宿主自带全屏按钮,给 <html> 加 .nofs 类让上面的 CSS 隐藏内置全屏按钮
+    try {
+      var _nofs = (typeof urlParams === 'function' ? urlParams('nofs') : new URLSearchParams(location.search).get('nofs'));
+      if (_nofs === '1') document.documentElement.classList.add('nofs');
+    } catch (e) {}
+  </script>
+  <% } %>
   <script>
     // Lanqu Scratch GUI — stage 1 verification config.
     // Full scratchConfig schema is documented in docs/easy-scratch3-migration-survey.md
@@ -42,7 +77,24 @@
         hideBlocks: []
       },
       stageArea: {
-        fullscreenButton: { show: true },
+        // 全屏按钮:宿主页面自带全屏按钮时(如 react-student WorkDetail 传
+        // nofs=1)关闭 GUI 内置全屏按钮,避免页面出现两个全屏按钮。
+        fullscreenButton: {
+          show: (typeof urlParams === 'function' ? urlParams('nofs') : null) !== '1',
+          handleBeforeSetStageUnFull(){ //退出全屏前的操作
+            var event = new CustomEvent('scratchUnFullScreen');
+            window.parent.document.dispatchEvent(event);
+            return true
+          },
+          handleBeforeSetStageFull(){ //全屏前的操作
+            var event = new CustomEvent('scratchFullScreen');
+            window.parent.document.dispatchEvent(event);
+            setTimeout(()=>{
+              window.scratch.setFullScreen(true)
+            },100)
+            return false
+          }
+        },
         startButton: { show: true },
         stopButton: { show: true },
         scale: 1,

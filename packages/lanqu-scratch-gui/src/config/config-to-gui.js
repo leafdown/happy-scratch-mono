@@ -15,7 +15,11 @@ import {createLanquStorage} from '../storage/lanqu-storage.js';
  */
 const buildEditorStateParams = config => ({
     locale: config.menuBar.languageButton.defaultLanguage,
-    isPlayerOnly: false,
+    // isPlayerOnly 由入口(player.jsx)经 hostConfig 传入;走 EditorState 的
+    // initPlayer 初始化路径,使 store 首次创建即为播放器模式。运行时改用
+    // window.scratch.setPlayerOnly 因 react-redux 实例重复无法生效,故必须在
+    // 初始化阶段确定。
+    isPlayerOnly: config.isPlayerOnly === true,
     isFullScreen: false
 });
 
