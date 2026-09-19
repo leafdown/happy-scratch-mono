@@ -415,9 +415,8 @@
         return
       }
 
-      //if(confirm("是否公开作品？")){
-        workStatus = 1
-      //}
+      // workStatus 由 requestUpload(status) 传入:提交=1,保存=0(存草稿)。
+      // 上游原逻辑是 confirm 后置 1,confirm 注释掉后赋值残留,导致保存永远等于提交。
       $.ajax({
         url: '/api/teaching/teachingWork/submit',
         type: 'POST',
@@ -448,7 +447,7 @@
               //更新cloudId
               window.scratch.setCloudId(workId)
             }
-            $('#projectTitle').html(projectTitle)
+            $('#projectTitle').html(uploadParam.projectTitle)
             var shareUrl =
               window.location.protocol +
               '//' +
