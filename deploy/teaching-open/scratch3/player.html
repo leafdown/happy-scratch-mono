@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google" value="notranslate">
+  <link rel="shortcut icon" href="static/favicon.ico">
+  <title>Scratch 3.0 Player</title>
+  <style>
+    html,body{margin:0;padding:0;overflow:hidden;height:100%;}
+    /* render-gui.raw.css 打进 bundle 后会给 html/body/.app 设 min-width:1024px;
+       min-height:640px。在小视口(如作品详情页的 4:3 iframe)下会把 #scratch 撑到
+       1024×640,舞台在其内部虽居中但整体溢出视口 → 看起来贴右/下。必须清掉。 */
+    html,body{min-width:0 !important;min-height:0 !important;}
+    #scratch{width:100vw;height:100vh;}
+    /* player.js 会把 #scratch 自身加上 class="app"(ne.className="app"),
+       故这里的 .app 就在 #scratch 本身上,必须用 #scratch.app 而不是 #scratch .app
+       (后代选择器永远匹配不上,导致舞台不居中)。 */
+    #scratch.app{
+      min-width:0 !important;min-height:0 !important;width:100%;height:100%;
+      display:flex !important;flex-direction:column;align-items:center;justify-content:center;
+    }
+    /* 直接子节点(舞台 column)在 flex 容器内双轴居中,不依赖 bundle 内哈希类名 */
+    #scratch.app > section{ margin:auto; }
+    /* GUI 自身全屏:bundle 里 .stage-wrapper_full-screen 只做了 align-items:center
+       (水平),没有 justify-content:center,舞台纵向贴顶。这里补垂直居中。 */
+    #scratch .stage-wrapper_full-screen_VkfX3{ justify-content:center; }
+    /* 宿主页面自带全屏按钮(nofs=1)时,隐藏 Scratch GUI 内置全屏按钮,避免页面上
+       出现两个全屏按钮。GUI 的 showFullscreenButton 配置在 v14 standalone 渲染下
+       不生效(已实测),故用 .nofs 类 + CSS 隐藏兜底。 */
+    .nofs button[aria-label="Enter full screen mode"],
+    .nofs button[aria-label*="full screen" i],
+    .nofs button[aria-label*="全屏"],
+    .nofs img[title="Full Screen Control"] { display: none !important; }
+  </style>
+  <script src="../js/jquery.min.js"></script>
+  <script src="../js/common.js?v=29"></script>
+  <script>
+    // nofs=1 → 宿主页面自带全屏按钮,给 <html> 加 .nofs 类,CSS 隐藏 GUI 内置全屏按钮
+    if (urlParams('nofs') === '1') document.documentElement.classList.add('nofs')
+  </script>
+  <script>
+    var workId = urlParams('workId')
+    var workUrl = urlParams('workUrl')
+    // 全局兜底:Scratch VM 项目未加载完时点击舞台会抛 "reading 'draggable'"
+    // 竞态错误,污染控制台且可能中断事件循环。捕获并吞掉该特定错误。
+    window.addEventListener('error', function (e) {
+      if (e && e.message && /draggable/i.test(e.message)) { e.preventDefault(); return true }
+    })
+    window.addEventListener('unhandledrejection', function (e) {
+      if (e && e.reason && e.reason.message && /draggable/i.test(e.reason.message)) { e.preventDefault() }
+    })
+    window.scratchConfig = {
+      cloudData:{
+        enable: true,
+        id: workId,
+        api: window.location.hostname + "/api/websocket/scratch/cloudData"
+      },
+      projectInfo: {
+        authorUsername: "",
+        authorAvatar: './static/avatar.png',
+      },
+      // 素材库地址:Scratch 自带素材(造型/背景 md5)从这里加载。
+      // 未配 assetHost 会 fallback 到 cdn.assets.scratch.mit.edu(国内慢/超时),
+      // 用七牛域名加速。getSysConfig 从 pro__SYS_CONFIG 读(React 已写兼容 key)。
+      assets: {
+        assetHost: getSysConfig('qiniuDomain') || '',
+      },
+      stageArea: {
+        scale: Math.min(window.innerWidth / 480, (window.innerHeight - 64) / 360),
+        width: 480,
+        height: 360,
+        showControl: true,
+        showLoading: false,
+        // 全屏按钮:默认显示 Scratch GUI 自带按钮(无宿主按钮的嵌入场景,
+        // 如管理端预览、旧 Vue 端)。
+        // React 作品详情页(WorkDetail)自带 AntD 全屏覆盖层,通过 nofs=1 关闭
+        // 这里的内置按钮,避免页面上出现两个全屏按钮。
+        fullscreenButton:{ //全屏按钮
+          show: urlParams('nofs') !== '1',
+          handleBeforeSetStageUnFull(){ //退出全屏前的操作
+            var event = new CustomEvent('scratchUnFullScreen');
+            window.parent.document.dispatchEvent(event);
+            return true
+          },
+          handleBeforeSetStageFull(){ //全屏前的操作
+            var event = new CustomEvent('scratchFullScreen');
+            window.parent.document.dispatchEvent(event);
+            setTimeout(()=>{
+              window.scratch.setFullScreen(true)
+            },100)
+            return false
+          }
+        },
+        startButton:{ //开始按钮
+          show: true,
+          handleBeforeStart(){ //开始前的操作
+            return true
+          }
+        },
+        stopButton:{ // 停止按钮
+          show: true,
+          handleBeforeStop(){ //停止前的操作
+            return true
+          }
+        }
+      },
+      handleVmInitialized: (vm) => {
+        window.vm = vm
+        // 防御:项目未完全加载时点击舞台 → onMouseDown → postIOData → postData
+        // 触发 "Cannot read properties of undefined (reading 'draggable')",
+        // 这是 IO target 尚未就绪的竞态条件。包装 postIOData 静默吞掉该异常。
+        if (vm && vm.runtime && typeof vm.runtime.postIOData === 'function') {
+          var orig = vm.runtime.postIOData
+          vm.runtime.postIOData = function () {
+            try { return orig.apply(vm.runtime, arguments) }
+            catch (e) {
+              if (e && e.message && /draggable/i.test(e.message)) return
+              throw e
+            }
+          }
+        }
+      },
+      // player.js 内部默认项目加载完已 vm.start(),此处只加载真实项目 + setCloudId。
+      // 不再手动 vm.start(),否则会重复启动破坏 isStarted 状态 → 绿旗触发但脚本不跑。
+      handleDefaultProjectLoaded: () => {
+        if(workUrl){
+          window.scratch.loadProject(workUrl, () => {
+            window.scratch.setCloudId(workUrl)
+          })
+        }else if(workId){
+          getWorkInfo(workId, function (info) {
+            window.scratch.loadProject(info.workFileKey_url, () => {
+              window.scratch.setCloudId(workId)
+            })
+          })
+        }
+      }
+
+    }
+  </script>
+</head>
+
+<body>
+  <div id="scratch">
+  </div>
+</body>
+
+<!-- lib.min.js removed -->
+<script type="text/javascript" src="chunks/player.js?v=20260826"></script>
+<script>
+
+</script>
+
+</html>

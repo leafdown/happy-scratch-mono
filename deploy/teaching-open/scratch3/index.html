@@ -1,0 +1,565 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="google" value="notranslate">
+  <link rel=icon href=../logo.png>
+  <link rel="stylesheet" href="../css/scratch.css" />
+  <title>蓝趣Scratch在线编程</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+  <script src="https://cdn.bootcdn.net/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script async src="//api.paas.plus/js/errlog.js"></script>
+  <script src="../js/qiniu.min.js"></script>
+  <script src="../js/common.js?v=29"></script>
+  <script>
+    var canShare = true
+    var uploadParam = {}
+    var workId = urlParams('workId')
+    var unitId = urlParams('unitId')
+    var workFileUrl = urlParams('workFile') //SB3路径
+    var workName = urlParams('workName') //作业名
+    if(workName) workName = decodeURIComponent(workName)
+    var departId = urlParams('departId') //班级ID
+    var additionalId = urlParams('additionalId') //附加作业ID
+    var scene = urlParams("scene") || 'create' //来源
+    var userInfo = getUserInfo();
+    var qn_token = getQiniuToken();
+    var workStatus = 0;;    setInterval(function () {
+      qn_token = getQiniuToken();
+    }, 600 * 1000)
+
+
+    var observer = {
+      next(res) { },
+      error(err) {
+        console.log(1, err)
+      },
+      complete(res) {
+        console.log(res)
+        if (res.key.endsWith('.jpg')) {
+          uploadParam.coverKey = uploadFile(res.key, '学生作业-封面', res.key,2)
+        } else {
+          uploadParam.projectKey = uploadFile(res.key, '学生作业-sb3', res.key,2)
+        }
+        uploadWork()
+      }
+    }
+
+    function handleFileUploaded(res){
+      console.log(res);
+      if(res.success){
+        var key = res.message
+        if(key.endsWith('.jpg')){
+          uploadParam.coverKey = uploadFile(key, '学生作业-封面', key,1)
+        }else{
+          uploadParam.projectKey = uploadFile(key, '学生作业-sb3', key,1)
+        }
+        uploadWork()
+      }else{
+        alert("上传失败：" + res.message)
+      }
+    }
+
+    window.scratchConfig = {
+      session: {
+        token: getUserToken(),
+        username: userInfo.realname || userInfo.username || '',
+        //avatar: getQiniuUrl(userInfo.avatar) || './static/avatar.png',
+      },
+      backpack:{
+        enable: true,
+        api: "/api/teaching/scratch/backpack",
+      },
+      cloudData:{
+        enable: true,
+        id: "create", //云变量ID，提交作业后使用window.scratch.setCloudId换成作品ID
+        api: window.location.hostname +"/api/websocket/scratch/cloudData" //云变量API地址
+      },
+      projectInfo: {//作品信息
+        projectName: "",
+        authorUsername: userInfo.username || '', //默认为自己的用户名
+        authorAvatar: './static/avatar.png',
+      },
+      logo: {
+        show: true, 
+        url: window.getLogo(),
+        handleClickLogo: () => {
+          window.open("/")
+        }
+      }, 
+      stageArea: {
+        fullscreenButton:{ //全屏按钮
+          show: true,
+          handleBeforeSetStageUnFull(){ //退出全屏前的操作
+            return true
+          },
+          handleBeforeSetStageFull(){ //全屏前的操作
+            return true
+          }
+        },
+        startButton:{ //开始按钮
+          show: true,
+          handleBeforeStart(){ //开始前的操作
+            return true
+          }
+        },
+        stopButton:{ // 停止按钮
+          show: true,
+          handleBeforeStop(){ //停止前的操作
+            return true
+          }
+        }
+      },
+      menuBar: {
+        //菜单栏样式
+        style: {
+          background: 'hsla(215, 100%, 65%, 1)',
+        },
+        //切换语言按钮
+        languageButton:{
+          show: false, //是否显示
+          defaultLanguage: 'zh-cn' //默认语言 en zh-cn zh-tw
+        },
+        //新建按钮
+        newButton:{
+          show: true,
+          handleBefore(){
+            return true
+          }
+        },
+        //从计算机加载按钮
+        loadFileButton:{
+          show: true,
+          handleBefore(){
+            return true
+          }
+        },
+        //保存到计算机按钮
+        saveFileButton:{
+          show: true,
+          handleBefore(){
+            return true
+          }
+        },
+        //加速模式按钮
+        turboModeButton:{
+          show: true
+        },
+        //教程按钮
+        helpButton:{
+          show: false,
+          handleBefore: ()=>{return true}
+        },
+         //我的物品按钮
+         myStuff:{
+          show: true,
+          url: '/account/center'
+        },
+        //用户头像按钮
+        userAvatar:{
+          show: true,
+          username: (userInfo && userInfo.realname) || '未登录',
+          avatar: (userInfo && getFileAccessHttpUrl(userInfo.avatar)) || './static/avatar.png',
+          handleClick(){
+            //弹出登录框等操作
+            console.log("点击头像")
+            window.open("/account/settings/BaseSetting")
+          }
+        },
+        customButtons: [
+          {
+            show: qn_token,
+            buttonName: '提交',
+            style:{
+              color: 'white',
+              background: 'hsla(30, 100%, 55%, 1)',
+            },
+            handleClick:()=>{
+              requestUpload(1)
+            }
+          },
+          {
+            show: qn_token,
+            buttonName: '保存',
+            style: {
+              color: 'white',
+              background: 'hsl(271deg 89% 70%)',
+            },
+            handleClick:()=>{
+              requestUpload(0)
+            }
+          },
+          {
+            show: true,
+            buttonName: '返回',
+            style: {
+              color: 'white',
+              background: 'rgb(90 132 225)',
+            },
+            handleClick:()=>{
+              window.location.href = '/account/center'
+            }
+          },
+          //可继续新增按钮
+        ],
+      },
+      blocks:{
+        scale: 0.8, // 积木缩放比例
+        // 隐藏分类
+        hideCatagorys:[], 
+        hideBlocks:[],
+      },
+      handleVmInitialized: (vm) => {
+        window.vm = vm
+        console.log("VM初始化完毕")
+      },
+      handleProjectLoaded: () => {
+        console.log("作品载入完毕")
+      },
+      handleDefaultProjectLoaded: () => {
+        //GUI 就绪后主动拉取并注入自定义素材库。
+        //注意:当前 GUI(lanqu-scratch-gui)并不消费 assets.handleBefore*LibraryOpen 那几个
+        //钩子(它们只是占位配置),素材库组件的数据源是 redux dynamicAssets。因此必须在
+        //这里的稳定回调里主动调用 window.scratch.push*Library 才会让自定义素材进素材库。
+        loadScratchAssets();
+        //默认作品加载完毕
+        if(workFileUrl){
+          window.scratch.loadProject(workFileUrl, () => {
+            $('.loading').hide()
+            $('.scratch-filter').hide()
+            window.scratch.setProjectName(workName)
+          })
+        }else if (workId) {
+          getWorkInfo(workId, function (info) {
+            window.scratch.loadProject(info.workFileKey_url, () => {
+              $('.loading').hide()
+              $('.scratch-filter').hide()
+              window.scratch.setProjectName(info.workName)
+              //设置云变量ID
+              window.scratch.setCloudId(workId)
+            })
+          })
+        } else if(unitId){
+          getUnitInfo(unitId, function(info){
+            window.scratch.loadProject(info.courseWork_url, () => {
+              $('.loading').hide()
+              $('.scratch-filter').hide()
+              window.scratch.setProjectName(info.unitName)
+            })
+          })
+        } else {
+          var displayName = (userInfo && userInfo.realname) || (userInfo && userInfo.username)
+          window.scratch.loadProject('./static/project.sb3', () => {
+            window.scratch.setProjectName(displayName ? displayName + '的作品' : 'Scratch作品')
+            $('.loading').hide()
+            $('.scratch-filter').hide()
+          })
+        }
+      },
+      //默认项目地址
+      defaultProjectURL: "./static/project.sb3",
+      //素材库配置
+      assets:{
+        //素材库地址:用 qiniuDomain(后端 getCurrentConfig 必返回)。
+        //原 CONFIG.qn_base 依赖旧前端写入的 localStorage,新前端未写 qn_base,
+        // 改用 getSysConfig 从 pro__SYS_CONFIG 读(React 已写兼容 key)。
+        assetHost: getSysConfig('qiniuDomain') || '',
+        //素材库索引地址
+        defaultIndex:{
+          sprites: "./static/json_index/sprites.json",
+          costumes: "./static/json_index/costumes.json",
+          backdrops: "./static/json_index/backdrops.json",
+          sounds: "./static/json_index/sounds.json"
+        },
+        //注意:当前 GUI 不消费下面这些 handleBefore*LibraryOpen 钩子(它们只是占位配置)。
+        //自定义素材改由 loadScratchAssets() 在 GUI 就绪时主动拉取并 push*Library 注入,
+        //故此处不再在钩子里 getScratchAssets(否则会与主动加载重复,pushAssets 不去重)。
+        handleBeforeSpriteLibraryOpen(){
+          return true;
+        },
+        //拦截造型库打开
+        handleBeforeCostumesLibraryOpen(){
+          return true;
+        },
+        //拦截背景库打开
+        handleBeforeBackdropsLibraryOpen(){
+          return true;
+        },
+        //拦截声音库打开
+        handleBeforeSoundLibraryOpen(){
+          return true;
+        }
+      }
+    }
+    console.log(getSysConfig('qiniuDomain'))
+    // 拉取并注入自定义素材库到 GUI。
+    // 后端 getScratchAssets?assetType=X(1背景 2声音 3造型 4角色)返回裸 JSONArray,每元素一个
+    // 完整 sprite/背景/sound JSON。GUI 素材库组件从 redux dynamicAssets 读数据,实例化后
+    // 通过 window.scratch.push*Library 注入。只注入一次,避免 pushAssets 不去重导致素材重复。
+    // 未登录时接口返回 500(非白名单),静默跳过即可——GUI 仍会显示 defaultIndex 内置素材。
+    var _assetsLoaded = false
+    function loadScratchAssets() {
+      if (_assetsLoaded) return
+      _assetsLoaded = true
+      if (!window.scratch || !window.getScratchAssets) return
+      var assetTypes = [
+        { type: 4, push: 'pushSpriteLibrary' },
+        { type: 3, push: 'pushCostumesLibrary' },
+        { type: 1, push: 'pushBackdropsLibrary' },
+        { type: 2, push: 'pushSoundsLibrary' }
+      ]
+      assetTypes.forEach(function (item) {
+        window.getScratchAssets(item.type, function (data) {
+          if (data && data.length && window.scratch && window.scratch[item.push]) {
+            window.scratch[item.push](data)
+          }
+        })
+      })
+    }
+    // 登录弹窗。后端 /sys/login 强制校验图形验证码:先调 /sys/randomImage/{checkKey}
+    // 拿 base64 验证码图,答案以 MD5(captcha+checkKey) 为 key 存 redis(600s)。
+    // 登录时带上 captcha+checkKey,后端同样算 key 取 redis 比对。
+    // 弹窗支持可选 hint 参数(如"登录已过期,请重新登录")。
+    function showLoginModal(callback, hint) {
+      $('#loginModal').css('display', 'flex')
+      $('#loginError').hide()
+      $('#loginPassword').val('')
+      $('#loginUsername').val('')
+      $('#loginCaptcha').val('')
+      $('#loginHint').remove()
+      if (hint) {
+        $('<p id="loginHint" style="margin:0 0 12px;color:#fa8c16;font-size:13px;"></p>').text(hint).insertAfter($('#loginModal h3'))
+      }
+      var checkKey = new Date().getTime()
+      function refreshCaptcha() {
+        $.ajax({
+          url: '/api/sys/randomImage/' + checkKey,
+          success: function(res) {
+            if (res.success && res.result) {
+              $('#loginCaptchaImg').attr('src', res.result).off('click').on('click', refreshCaptcha)
+            }
+          }
+        })
+      }
+      refreshCaptcha()
+      $('#loginSubmitBtn').off('click').on('click', function() {
+        var u = $('#loginUsername').val(), p = $('#loginPassword').val(), c = $('#loginCaptcha').val()
+        if(!u || !p) { $('#loginError').text('请输入用户名和密码').show(); return }
+        if(!c) { $('#loginError').text('请输入验证码').show(); return }
+        $.ajax({
+          url: '/api/sys/login',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ username: u, password: p, captcha: c, checkKey: checkKey }),
+          success: function(res) {
+            if(res.success) {
+              localStorage.setItem('pro__Access-Token', JSON.stringify({ value: res.result.token }))
+              localStorage.setItem('Access-Token', JSON.stringify(res.result.token))
+              if(res.result.userInfo) localStorage.setItem('pro__Login_Userinfo', JSON.stringify({ value: res.result.userInfo }))
+              if(res.result.role) localStorage.setItem('pro__Login_UserRole', JSON.stringify({ value: res.result.role }))
+              $('#loginModal').hide()
+              if(callback) callback()
+            } else {
+              $('#loginError').text(res.message || '登录失败').show()
+              refreshCaptcha()
+            }
+          },
+          error: function() { $('#loginError').text('网络错误').show(); refreshCaptcha() }
+        })
+      })
+      $('#loginCancelBtn').off('click').on('click', function() { $('#loginModal').hide() })
+    }
+    //请求提交作业
+    function requestUpload(status){
+      // 未登录则弹登录框,登录后再继续提交
+      if(!getUserToken()){
+        showLoginModal(function() { requestUpload(status) })
+        return;
+      }
+      qn_token = getQiniuToken();
+      // getToken 返回 500("Token失效")时 qn_token 为空,七牛上传会用 undefined token
+      // 导致 401 bad token。token 失效则重新登录后重试。
+      if(!qn_token){
+        $('.uploading').hide();
+        $('.scratch-filter').hide();
+        showLoginModal(function() { requestUpload(status) }, '登录已过期,请重新登录')
+        return;
+      }
+      workStatus = status
+      $('.scratch-filter').show()
+      $('.uploading').show()
+      var uuid = window.uuid()
+      uploadParam.projectTitle = window.scratch.getProjectName()
+      var defaultUploadType = getSysConfig('uploadType')
+      window.scratch.getProjectCoverBlob(cover => {
+        if(defaultUploadType == 'qiniu'){
+          upload2Qiniu(cover, 'project3/' + uuid + '.jpg', uploadParam.projectTitle, observer)
+        }else{
+          update2Local(cover,uploadParam.projectTitle + ".jpg", 'project3', handleFileUploaded)
+        }
+      })
+      window.scratch.getProjectFile(file => {
+        if(defaultUploadType == 'qiniu'){
+          upload2Qiniu(file, 'project3/' + uuid + '.sb3', uploadParam.projectTitle, observer)
+        }else{
+          update2Local(file, uploadParam.projectTitle + '.sb3', 'project3', handleFileUploaded)
+        }
+      })
+    }
+    //上传作业
+    function uploadWork() {
+      if (!uploadParam.projectKey || !uploadParam.coverKey) {
+        return
+      }
+
+      //if(confirm("是否公开作品？")){
+        workStatus = 1
+      //}
+      $.ajax({
+        url: '/api/teaching/teachingWork/submit',
+        type: 'POST',
+        dataType: 'json',
+        contentType: 'application/json',
+        beforeSend: function (request) {
+          request.setRequestHeader('X-Access-Token', getUserToken())
+        },
+        data: JSON.stringify({
+          courseId: unitId,
+          workCover: uploadParam.coverKey,
+          workFile: uploadParam.projectKey,
+          workName: uploadParam.projectTitle,
+          id: workId,
+          workType: 2,
+          workStatus: workStatus,
+          departId: departId,
+          additionalId: additionalId,
+          workScene: scene,
+          hasCloudData: window.vm.runtime.hasCloudData() //是否包含云变量
+        }),
+        success: function (res) {
+          canShare = true
+          if (res.code == 200) {
+             //如果包含云变量
+            if(window.vm.runtime.hasCloudData()){
+              workId = res.result.id
+              //更新cloudId
+              window.scratch.setCloudId(workId)
+            }
+            $('#projectTitle').html(projectTitle)
+            var shareUrl =
+              window.location.protocol +
+              '//' +
+              window.location.hostname +
+              (window.location.port ? ':' + window.location.port : '') +
+              '/work-detail?id=' +
+              res.result.id
+            createCode('qrcode', shareUrl)
+            var img = document.createElement('img');
+            img.id = 'qrCodeIco';
+            img.src = '/logo.png';
+            qrcode.appendChild(img);
+            $('.scratch-filter').show()
+            $('.release-success').show()
+          } else {
+            $('.release-false').show()
+          }
+        },
+        error: function () {
+          $('.release-false').show()
+        },
+        complete: function () {
+          $('.uploading').hide()
+        }
+      })
+    }
+
+  </script>
+</head>
+
+<body>
+  <div class="scratch-filter">
+    <div class="loading">
+      <div class="con-box">
+        <h4>请稍后</h4>
+        <span>正在加载中……</span>
+      </div>
+    </div>
+    <div class="uploading">
+      <div class="con-box">
+        <h4>请稍后</h4>
+        <div class="watch-works">
+          <span>上传中……</span>
+        </div>
+      </div>
+      <div class="fault-code">
+        <span>&times</span>
+      </div>
+    </div>
+    <div class="release-success">
+      <div class="con-box">
+        <h4><span id="projectTitle"></span> 提交成功</h4>
+        <p class="ercode-img">
+          <span id="qrcode" style="align-items: center;display: flex; justify-content: center;"></span>
+        </p>
+        <div class="watch-works">
+          <span>微信扫描二维码使用手机体验</span>
+        </div>
+      </div>
+      <div class="fault-code">
+        <span>&times</span>
+      </div>
+    </div>
+    <div class="release-false">
+      <div class="con-box-two">
+        <h4>作品发布失败</h4>
+        <p class="smile-img">
+          <span style="font-size:40px;line-height:1">&#128546;</span>
+        </p>
+        <div class="refresh-release">
+          <span>请重新发布～</span>
+        </div>
+      </div>
+      <div class="fault-code">
+        <span>&times</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="scratch">
+
+  </div>
+
+  <!-- 登录弹窗 -->
+  <div id="loginModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#fff;padding:24px 24px 20px;border-radius:8px;width:340px;max-width:calc(100vw - 32px);box-sizing:border-box;box-shadow:0 8px 24px rgba(0,0,0,.2);">
+      <h3 style="margin:0 0 16px;">登录</h3>
+      <input id="loginUsername" placeholder="用户名" style="display:block;width:100%;height:36px;border:1px solid #d9d9d9;border-radius:6px;padding:0 12px;margin-bottom:12px;font-size:14px;box-sizing:border-box;outline:none;" />
+      <input id="loginPassword" type="password" placeholder="密码" style="display:block;width:100%;height:36px;border:1px solid #d9d9d9;border-radius:6px;padding:0 12px;margin-bottom:12px;font-size:14px;box-sizing:border-box;outline:none;" />
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <input id="loginCaptcha" placeholder="验证码" style="flex:1;height:36px;border:1px solid #d9d9d9;border-radius:6px;padding:0 12px;font-size:14px;box-sizing:border-box;outline:none;min-width:0;" />
+        <img id="loginCaptchaImg" alt="验证码" title="点击刷新" style="height:36px;width:96px;border:1px solid #d9d9d9;border-radius:6px;cursor:pointer;background:#f5f5f5;object-fit:cover;" />
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+        <button id="loginCancelBtn" style="height:36px;padding:0 16px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;">取消</button>
+        <button id="loginSubmitBtn" style="height:36px;padding:0 16px;border:none;border-radius:6px;background:#1890ff;color:#fff;cursor:pointer;">登录</button>
+      </div>
+      <p id="loginError" style="color:red;margin:8px 0 0;display:none;font-size:13px;"></p>
+    </div>
+  </div>
+
+</body>
+<!-- lib.min.js removed: react bundled in chunks/gui.js -->
+<script type="text/javascript" src="chunks/gui.js?v=20260826"></script>
+<script>
+  $('.fault-code').on('click', function () {
+    uploadParam = {}
+    $('.scratch-filter').hide()
+    $('.release-success').hide()
+    $('.release-false').hide()
+  })
+</script>
+
+</html>

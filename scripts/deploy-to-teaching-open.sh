@@ -3,9 +3,10 @@
 # deploy-to-teaching-open.sh — build @lanqu/scratch-gui and deploy the runtime
 # artifacts to teaching-open/web/public/scratch3/.
 #
-# Only build outputs (JS bundles, blocks-media, fetch-worker) are overwritten.
-# Lanqu-owned files (index.html, player.html, static/json_index, avatar, etc.)
-# are preserved — they hold the scratchConfig and backend integration.
+# Build outputs (JS bundles, blocks-media, fetch-worker) are overwritten.
+# The Lanqu-owned host pages (index.html, player.html) and their dependency
+# (js/common.js) are now CANONICAL in this repo under deploy/teaching-open/
+# and are synced by this script as well — see deploy/teaching-open/README.md.
 #
 # Usage:
 #   ./scripts/deploy-to-teaching-open.sh                  # build + deploy
@@ -23,6 +24,8 @@ DO_BUILD="yes"
 # teaching-open scratch3 target (sibling of happy-scratch-mono under Teacher/)
 TO_SCRATCH3="/Users/felixy/Codes/Teacher/teaching-open/web/public/scratch3"
 TO_PUBLIC="/Users/felixy/Codes/Teacher/teaching-open/web/public"
+# student-web is the production frontend; it has its own copy of scratch3/
+TO_STUDENT_PUBLIC="/Users/felixy/Codes/Teacher/teaching-open/student-web/public"
 
 if [[ ! -d "$TO_SCRATCH3" ]]; then
     echo "Target not found: $TO_SCRATCH3"
@@ -89,9 +92,28 @@ cp -R "$SRC/static/blocks-media/high-contrast" "$TO_SCRATCH3/static/blocks-media
 echo "    tutorial chunks..."
 cp "$SRC"/chunks/*-steps.*.js "$TO_SCRATCH3/chunks/" 2>/dev/null || true
 
+# --- Lanqu-owned host pages (canonical copies live in deploy/teaching-open/) ---
+# index.html / player.html carry scratchConfig + backend integration and are NOT
+# build outputs; js/common.js (v29) is their hard dependency (getSysConfig fix).
+# Sync to both frontends: student-web/public (production) and web/public (legacy).
+HOST_SRC="$ROOT/deploy/teaching-open"
+if [[ -d "$HOST_SRC" ]]; then
+    echo "    host pages (canonical)..."
+    for T_PUB in "$TO_STUDENT_PUBLIC" "$TO_PUBLIC"; do
+        if [[ -d "$T_PUB/scratch3" ]]; then
+            cp "$HOST_SRC/scratch3/index.html"  "$T_PUB/scratch3/index.html"
+            cp "$HOST_SRC/scratch3/player.html" "$T_PUB/scratch3/player.html"
+            mkdir -p "$T_PUB/js"
+            cp "$HOST_SRC/js/common.js"         "$T_PUB/js/common.js"
+        fi
+    done
+else
+    echo "    host pages: deploy/teaching-open not found, skipped"
+fi
+
 echo ""
 echo "=== Deploy complete ==="
 echo "Build outputs updated in $TO_SCRATCH3"
-echo "Lanqu-owned files (index.html, scratchConfig, static/json_index, etc.) preserved."
+echo "Host pages synced from deploy/teaching-open/ (see deploy/teaching-open/README.md)."
 echo ""
 echo "Next: restart teaching-open dev server (cd web && yarn serve) to verify."
