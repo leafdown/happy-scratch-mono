@@ -448,6 +448,8 @@
               window.scratch.setCloudId(workId)
             }
             $('#projectTitle').html(uploadParam.projectTitle)
+            // 保存(存草稿)与提交共用本弹窗,按状态显示对应文案
+            $('#uploadStatusText').text(workStatus === 1 ? '提交成功' : '保存成功')
             var shareUrl =
               window.location.protocol +
               '//' +
@@ -499,7 +501,7 @@
     </div>
     <div class="release-success">
       <div class="con-box">
-        <h4><span id="projectTitle"></span> 提交成功</h4>
+        <h4><span id="projectTitle"></span> <span id="uploadStatusText">提交成功</span></h4>
         <p class="ercode-img">
           <span id="qrcode" style="align-items: center;display: flex; justify-content: center;"></span>
         </p>
