@@ -1,8 +1,8 @@
 # happy-scratch-mono
 
-基于 [scratchfoundation/scratch-editor](https://github.com/scratchfoundation/scratch-editor) v14.1.0 的 Scratch 编辑器定制发行版，为蓝鹊（Lanqu）在线编程教学平台提供可嵌入的 Scratch 3.0 编辑器。
+基于 [scratchfoundation/scratch-editor](https://github.com/scratchfoundation/scratch-editor) v15.2.0 的 Scratch 编辑器定制发行版，为蓝鹊（Lanqu）在线编程教学平台提供可嵌入的 Scratch 3.0 编辑器。
 
-本项目将 [easy-scratch3](https://github.com/open-scratch/easy-scratch3)（基于 2021 版 scratch-gui 的二次封装）的全部定制能力，以 **方案**（薄封装层 + 最小化源码 patch）移植到最新的 scratch-editor v14.1.0 之上。
+本项目将 [easy-scratch3](https://github.com/open-scratch/easy-scratch3)（基于 2021 版 scratch-gui 的二次封装）的全部定制能力，以 **方案**（薄封装层 + 最小化源码 patch）移植到最新的 scratch-editor v15.2.0 之上。
 
 ## 项目目标
 
@@ -15,10 +15,12 @@
 
 ```
 packages/
-├── scratch-gui/              # 官方 scratch-gui v14.1.0（含最小化 patch，见 PATCHES.md
+├── scratch-gui/              # 官方 scratch-gui v15.2.0（含最小化 patch，见 PATCHES.md
 ├── scratch-vm/               # 官方 scratch-vm
 ├── scratch-render/           # 官方 scratch-render
 ├── scratch-svg-renderer/     # 官方 scratch-svg-renderer
+├── scratch-paint/            # 官方画板编辑器（15.x 并入 monorepo）
+├── scratch-storage/          # 官方素材存储层（15.x 并入 monorepo）
 ├── scratch-media-lib-scripts/# 官方素材库脚本
 ├── task-herder/              # 官方异步任务调度
 └── lanqu-scratch-gui/        # 蓝鹊封装包（B 方案核心）
@@ -69,7 +71,7 @@ scripts/
 `@lanqu/scratch-gui` 的构建产物部署到 `teaching-open/web/public/scratch3/`，作为蓝鹊教学平台的 Scratch 编辑器：
 
 - `index.html` / `player.html` 含蓝鹊 `scratchConfig`（后端 API、提交作业逻辑）
-- `chunks/gui.js` 是封装包产物（引用 scratch-gui v14 standalone dist）
+- `chunks/gui.js` 是封装包产物（引用 scratch-gui v15 standalone dist）
 - 背包/云变量走蓝鹊后端（`/api/teaching/scratch/backpack`、`/api/websocket/scratch/cloudData`）
 - 支持按 `workId` 加载学生作品
 
@@ -78,19 +80,19 @@ scripts/
 跟随 scratch-editor 官方升级，一条命令：
 
 ```bash
-./scripts/upgrade-from-upstream.sh              # 默认从 upstream/14.1.x
-./scripts/upgrade-from-upstream.sh 14.x         # 指定分支
+./scripts/upgrade-from-upstream.sh              # 默认从 v15.2.0（tag）
+./scripts/upgrade-from-upstream.sh develop      # 指定分支/tag
 ```
 
 脚本自动：fetch → 备份分支 → rebase → 冲突指引 → 清缓存重建 → 验证清单。
 
-所有 patch 遵循"新增可选 prop/参数，默认行为不变"，实测 rebase 零冲突（已验证 rebase 到 upstream/14.1.x 最新 3 个 commit）。详见 `packages/scratch-gui/PATCHES.md`。
+所有 patch 遵循"新增可选 prop/参数，默认行为不变"。从 14.1.0 到 v15.2.0 的大版本升级以 merge 方式合入（历史保留，无需强推），冲突集中在 README、锁文件和定制素材库 JSON。详见 `packages/scratch-gui/PATCHES.md`。
 
 ## 开发
 
 ```bash
 # 环境：node v24（见 .nvmrc），需 Clash 代理（localhost:7897）
-source ~/.nvm/nvm.sh && nvm use 24.16.0
+source ~/.nvm/nvm.sh && nvm use
 
 # 构建 scratch-gui dist（改了 scratch-gui 源码后必须）
 npm run build --workspace=@scratch/scratch-gui

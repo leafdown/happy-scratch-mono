@@ -3,7 +3,7 @@
 Patches applied to `packages/scratch-gui/src/` for the @lanqu/scratch-gui B-plan port.
 All patches follow the principle: **add optional prop/parameter, default behavior unchanged**.
 Patch commits are prefixed `[patch]`... actually they use conventional `feat(scratch-gui):` scope.
-To ease `git rebase upstream/main`, all patches are additive (new optional props/params only).
+To ease upstream syncs (see `scripts/upgrade-from-upstream.sh`), all patches are additive (new optional props/params only).
 
 ## Applied patches
 
@@ -39,7 +39,7 @@ To ease `git rebase upstream/main`, all patches are additive (new optional props
 - `hideCatagorys`/`hideBlocks` take effect when blocks.jsx regenerates the toolbox (on target switch / project load). The initial toolbox (from `makeToolboxXML(true)` in reducers/toolbox.js) has no hideConfig. Hosts can force a refresh via `window.vm.emitWorkspaceUpdate()` once the VM is ready.
 
 ## Upgrade procedure
-1. `git fetch upstream && git rebase upstream/main`
+1. `git fetch upstream --tags && git rebase v15.2.0` (use the latest upstream release tag)
 2. Conflicts concentrate on patch commits — resolve by re-applying the additive prop/param
 3. `npm run build --workspace=@scratch/scratch-gui` to regenerate dist (clear `node_modules/.cache` if webpack caches stale modules)
 4. `npm run build --workspace=@lanqu/scratch-gui` to verify wrapper still builds

@@ -71,7 +71,9 @@ packages/
 ├── scratch-gui/            React-based editor UI
 ├── scratch-vm/             Virtual machine that runs Scratch projects
 ├── scratch-render/         WebGL renderer for the stage
+├── scratch-paint/          Vector and bitmap paint editor
 ├── scratch-svg-renderer/   SVG asset processor
+├── scratch-storage/        Project asset loading and storage
 ├── task-herder/            Async task scheduler with rate limiting
 └── scratch-media-lib-scripts/  Build scripts for media library assets
 scripts/                    Monorepo-level utility scripts
@@ -85,6 +87,8 @@ scripts/                    Monorepo-level utility scripts
 | `scratch-vm` | JavaScript | webpack | Tap |
 | `scratch-render` | JavaScript | webpack | Tap |
 | `scratch-svg-renderer` | JavaScript | webpack | Tap |
+| `scratch-paint` | JavaScript / JSX | webpack | Jest |
+| `scratch-storage` | TypeScript | webpack | Jest |
 | `task-herder` | TypeScript | Vite | Vitest |
 | `scratch-media-lib-scripts` | JavaScript | — | Jest |
 

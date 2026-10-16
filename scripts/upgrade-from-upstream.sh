@@ -3,9 +3,9 @@
 # upgrade-from-upstream.sh — sync @lanqu/scratch-gui fork with scratchfoundation/scratch-editor
 #
 # Usage:
-#   ./scripts/upgrade-from-upstream.sh                 # upgrade from upstream/14.1.x
+#   ./scripts/upgrade-from-upstream.sh                 # upgrade from upstream release tag v15.2.0
 #   ./scripts/upgrade-from-upstream.sh 14.x            # upgrade from a different upstream branch
-#   ./scripts/upgrade-from-upstream.sh 14.1.x --no-build  # skip rebuild/verify
+#   ./scripts/upgrade-from-upstream.sh v15.2.0 --no-build  # skip rebuild/verify
 #
 # What it does:
 #   1. fetch upstream release branch
@@ -21,7 +21,7 @@
 set -euo pipefail
 
 # --- config ---
-BRANCH="${1:-14.1.x}"
+BRANCH="${1:-v15.2.0}"
 DO_BUILD="yes"
 [[ "${2:-}" == "--no-build" ]] && DO_BUILD="no"
 
