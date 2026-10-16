@@ -1,6 +1,6 @@
 {
   "name": "scratch-editor",
-  "version": "14.1.0",
+  "version": "15.2.0",
   "private": "true",
   "description": "Scratch editor mono-repository",
   "keywords": [],
@@ -16,7 +16,9 @@
   "author": "Scratch Foundation",
   "workspaces": [
     "packages/task-herder",
+    "packages/scratch-storage",
     "packages/scratch-svg-renderer",
+    "packages/scratch-paint",
     "packages/scratch-render",
     "packages/scratch-vm",
     "packages/scratch-gui",
@@ -47,8 +49,8 @@
     "cross-env": "7.0.3",
     "globals": "16.5.0",
     "husky": "8.0.3",
-    "npm": "10.9.8",
-    "semantic-release": "25.0.3",
+    "npm": "10.9.9",
+    "semantic-release": "25.0.9",
     "ts-node": "10.9.2"
   }
 }

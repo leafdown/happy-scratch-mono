@@ -12,13 +12,36 @@ export default eslintConfigScratch.defineConfig(
         }
     },
     {
+        // Untranspiled sandbox frame scripts: capped at the browserslist floor.
+        files: [
+            'src/sandbox/runner.js',
+            'src/sandbox/measure-svg.js'
+        ],
+        languageOptions: {
+            ecmaVersion: 2017
+        }
+    },
+    {
         files: [
             '*.{,c,m}js', // for example, webpack.config.js
             'test/**/*.{,c,m}js'
         ],
+        ignores: ['test/playwright/**/*.{,c,m}js'],
         extends: [eslintConfigScratch.legacy.node],
         languageOptions: {
             globals: globals.node
+        }
+    },
+    {
+        // Playwright test files run in Node but contain page.evaluate() callbacks
+        // that reference browser globals (window, document) executed in Chromium.
+        files: ['test/playwright/**/*.{,c,m}js'],
+        extends: [eslintConfigScratch.legacy.node],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+                ...globals.browser
+            }
         }
     },
     globalIgnores([

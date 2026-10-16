@@ -209,6 +209,7 @@ const GUIComponent = props => {
         tipsLibraryVisible,
         useExternalPeripheralList,
         username,
+        avatarBadge,
         userOwnsProject,
         hideTutorialProjects,
         vm,
@@ -381,6 +382,7 @@ const GUIComponent = props => {
                             onToggleLoginOpen={onToggleLoginOpen}
                             userOwnsProject={userOwnsProject}
                             username={username}
+                            avatarBadge={avatarBadge}
                             accountMenuOptions={accountMenuOptions}
                         />
                     </MenuRefProvider>
@@ -703,6 +705,7 @@ GUIComponent.propTypes = {
     tipsLibraryVisible: PropTypes.bool,
     useExternalPeripheralList: PropTypes.bool, // true for CDM, false for normal Scratch Link
     username: PropTypes.string,
+    avatarBadge: PropTypes.number,
     userOwnsProject: PropTypes.bool,
     hideTutorialProjects: PropTypes.bool,
     vm: PropTypes.instanceOf(VM).isRequired

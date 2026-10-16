@@ -562,9 +562,12 @@ class VirtualMachine extends EventEmitter {
 
             if (wholeProject) {
                 // A loaded project may carry dangling variable, list, or broadcast
-                // references baked in by historical bugs. Reconcile each target so
-                // those references resolve cleanly without renaming any legitimate
-                // local-vs-global name collisions.
+                // references baked in by historical bugs. First restore any
+                // definition that several targets still share, so they keep sharing
+                // it. Then reconcile each target so its remaining references resolve
+                // the way the runtime would have resolved them on execution, without
+                // renaming any legitimate local-vs-global name collisions.
+                this.runtime.restoreSharedMissingDefinitions(targets);
                 targets.forEach(target => target.reconcileVariableReferences());
             } else {
                 this.editingTarget.fixUpVariableReferences();
@@ -960,19 +963,16 @@ class VirtualMachine extends EventEmitter {
      * @param {string} svg - new SVG for the renderer.
      * @param {number} rotationCenterX x of point about which the costume rotates, relative to its upper left corner
      * @param {number} rotationCenterY y of point about which the costume rotates, relative to its upper left corner
+     * @returns {Promise<void>} resolves once the skin is updated and the costume size reflects it
      */
-    updateSvg (costumeIndex, svg, rotationCenterX, rotationCenterY) {
+    async updateSvg (costumeIndex, svg, rotationCenterX, rotationCenterY) {
         const costume = this.editingTarget.getCostumes()[costumeIndex];
         if (costume && costume.broken) delete costume.broken;
-        if (costume && this.runtime && this.runtime.renderer) {
-            costume.rotationCenterX = rotationCenterX;
-            costume.rotationCenterY = rotationCenterY;
-            this.runtime.renderer.updateSVGSkin(costume.skinId, svg, [rotationCenterX, rotationCenterY]);
-            costume.size = this.runtime.renderer.getSkinSize(costume.skinId);
-        }
+
         const storage = this.runtime.storage;
         // If we're in here, we've edited an svg in the vector editor,
-        // so the dataFormat should be 'svg'
+        // so the dataFormat should be 'svg'. Commit the edited bytes synchronously;
+        // they are the input SVG and do not depend on the async measurement.
         costume.dataFormat = storage.DataFormat.SVG;
         costume.bitmapResolution = 1;
         costume.asset = storage.createAsset(
@@ -984,6 +984,26 @@ class VirtualMachine extends EventEmitter {
         );
         costume.assetId = costume.asset.assetId;
         costume.md5 = `${costume.assetId}.${costume.dataFormat}`;
+
+        if (costume && this.runtime && this.runtime.renderer) {
+            costume.rotationCenterX = rotationCenterX;
+            costume.rotationCenterY = rotationCenterY;
+            const expectedMd5 = costume.md5;
+            // Emit immediately so listeners (e.g. project-changed tracking) fire synchronously.
+            this.emitTargetsUpdate();
+            try {
+                // updateSVGSkin resolves once the sandboxed measurement pipeline has set the
+                // skin's dimensions; await it so getSkinSize reads the measured size, not a stale one.
+                await this.runtime.renderer.updateSVGSkin(costume.skinId, svg, [rotationCenterX, rotationCenterY]);
+            } catch (e) {
+                // Measurement failed; keep the previous size. Project-changed already emitted above.
+                log.error(`updateSvg: failed to measure skin for costume "${costume.name}"`, e);
+                return;
+            }
+            // If a newer updateSvg call ran while we awaited, don't overwrite its size / emit late updates.
+            if (costume.md5 !== expectedMd5) return;
+            costume.size = this.runtime.renderer.getSkinSize(costume.skinId);
+        }
         this.emitTargetsUpdate();
     }
 
@@ -1486,7 +1506,7 @@ class VirtualMachine extends EventEmitter {
     }
 
     /**
-     * Reorder the sounds of a target if it exists. Return whether it occured.
+     * Reorder the sounds of a target if it exists. Return whether it occurred.
      * @param {!string} targetId ID of the target which owns the sounds.
      * @param {!number} soundIndex index of the sound to move.
      * @param {!number} newIndex index that the sound should be moved to.
