@@ -72,6 +72,7 @@ scripts/
 
 - `index.html` / `player.html` 含蓝鹊 `scratchConfig`（后端 API、提交作业逻辑）
 - `chunks/gui.js` 是封装包产物（引用 scratch-gui v15 standalone dist）
+- 懒加载 chunk（paper 沙箱、tutorial steps、fetch-worker、mediapipe）额外镜像到前端 `public/chunks/`（即站点根 `/chunks/`）：scratch-gui standalone 的内嵌 runtime 以 `/` 为 publicPath 请求这些文件，命中 SPA fallback 的 HTML 会报 ChunkLoadError；`/static/assets/` 下的 sandbox 脚本（`runner`、`measure-svg`、`paper-core`、`paper-import`）同理经 student-web 的 `scratch3-fallback.mjs` 镜像到根 `/static/`
 - 背包/云变量走蓝鹊后端（`/api/teaching/scratch/backpack`、`/api/websocket/scratch/cloudData`）
 - 支持按 `workId` 加载学生作品
 

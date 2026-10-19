@@ -3,9 +3,13 @@
 # deploy-to-teaching-open.sh — build @lanqu/scratch-gui and deploy the runtime
 # artifacts to teaching-open/web/public/scratch3/.
 #
-# Build outputs (JS bundles, chunks, workers, blocks-media) are deployed to
-# both frontends — web/public (legacy Vue) and student-web/public (production)
-# — whenever their scratch3/ directories exist.
+# Build outputs (JS bundles, chunks, workers, blocks-media, paper sandbox
+# assets) are deployed to both frontends — web/public (legacy Vue) and
+# student-web/public (production) — whenever their scratch3/ directories exist.
+# The runtime chunk set is additionally mirrored into each frontend's
+# public/chunks/ (site root) because scratch-gui's nested webpack runtime
+# requests lazy chunks from /chunks/..., not /scratch3/chunks/... — see the
+# "root-level chunk mirror" section below.
 # The Lanqu-owned host pages (index.html, player.html) and their dependency
 # (js/common.js) are now CANONICAL in this repo under deploy/teaching-open/
 # and are synced by this script as well — see deploy/teaching-open/README.md.
@@ -37,8 +41,11 @@ fi
 
 # --- node env ---
 if [[ -f "$HOME/.nvm/nvm.sh" ]]; then
+    # Pass --no-use so nvm does not parse this script's own arguments as nvm
+    # arguments (a bare `source nvm.sh` lets nvm consume "$@" and auto-switch
+    # or fail with an odd status before any deploy step runs).
     # shellcheck disable=SC1091
-    source "$HOME/.nvm/nvm.sh"
+    source "$HOME/.nvm/nvm.sh" --no-use
 fi
 if command -v nvm >/dev/null 2>&1; then
     nvm use 24.16.0 2>/dev/null || nvm use "$(cat .nvmrc)" 2>/dev/null || true
@@ -99,6 +106,15 @@ deploy_build_outputs() {
     # --- mediapipe assets (video sensing face detection) ---
     rm -rf "$PUB/scratch3/chunks/mediapipe"
     cp -R "$SRC/chunks/mediapipe" "$PUB/scratch3/chunks/" 2>/dev/null || true
+
+    # --- generated sandbox scripts in static/assets (v15) ---
+    # runner.*.js (scratch-svg-renderer sandbox bootstrap), measure-svg.*.js
+    # (SVG measurement), paper-core.min.*.js + paper-import.*.js (paint
+    # editor's SVG import sandbox). The nested runtime resolves them to
+    # /static/assets/... (site root); student-web's scratch3-fallback.mjs
+    # mirrors scratch3/static → static, so they must be present here.
+    find "$SRC/static/assets" -maxdepth 1 \( -name '*.js' -o -name '*.js.LICENSE.txt' \) \
+        -exec cp {} "$PUB/scratch3/static/assets/" \;
 }
 
 echo "    JS bundles + chunks → web/public (legacy)..."
@@ -109,10 +125,28 @@ if [[ -d "$TO_STUDENT_PUBLIC/scratch3" ]]; then
     deploy_build_outputs "$TO_STUDENT_PUBLIC"
 fi
 
-# --- fetch-worker also at web/public/chunks/ (vue dev server resolves worker
-#     URLs to /chunks/ due to scratch-gui dist's nested publicPath) ---
-mkdir -p "$TO_PUBLIC/chunks"
-cp "$SRC"/chunks/fetch-worker.*.js "$TO_PUBLIC/chunks/" 2>/dev/null || true
+# --- Root-level chunk mirror ------------------------------------------------
+# scratch-gui's dist-standalone embeds a nested webpack runtime whose publicPath
+# is hardcoded to '/' (webpack's 'auto' falls back to '/' inside an embedded UMD
+# bundle). Lazy chunks — paper-url / paper-source / 540 (paint editor sandbox),
+# tutorial step images, fetch-workers, mediapipe — are therefore requested from
+# /chunks/... at the site root instead of /scratch3/chunks/.... Both frontends
+# copy public/ verbatim to their output root (Vite/Vue publicDir), so mirroring
+# the chunk set into public/chunks/ makes those root-relative requests hit real
+# files instead of the SPA fallback's index.html (which surfaces as
+# ChunkLoadError / "Unexpected token '<'" in the editor).
+deploy_root_chunks() {
+    local PUB="$1"
+
+    mkdir -p "$PUB/chunks"
+    find "$SRC/chunks" -maxdepth 1 -name '*.js' ! -name '*.map' -exec cp {} "$PUB/chunks/" \;
+    rm -rf "$PUB/chunks/mediapipe"
+    cp -R "$SRC/chunks/mediapipe" "$PUB/chunks/" 2>/dev/null || true
+}
+
+echo "    root /chunks/ mirror..."
+deploy_root_chunks "$TO_PUBLIC"
+deploy_root_chunks "$TO_STUDENT_PUBLIC"
 
 # --- Lanqu-owned host pages (canonical copies live in deploy/teaching-open/) ---
 # index.html / player.html carry scratchConfig + backend integration and are NOT
