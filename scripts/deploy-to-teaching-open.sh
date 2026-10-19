@@ -3,7 +3,9 @@
 # deploy-to-teaching-open.sh — build @lanqu/scratch-gui and deploy the runtime
 # artifacts to teaching-open/web/public/scratch3/.
 #
-# Build outputs (JS bundles, blocks-media, fetch-worker) are overwritten.
+# Build outputs (JS bundles, chunks, workers, blocks-media) are deployed to
+# both frontends — web/public (legacy Vue) and student-web/public (production)
+# — whenever their scratch3/ directories exist.
 # The Lanqu-owned host pages (index.html, player.html) and their dependency
 # (js/common.js) are now CANONICAL in this repo under deploy/teaching-open/
 # and are synced by this script as well — see deploy/teaching-open/README.md.
@@ -62,35 +64,55 @@ SRC="packages/lanqu-scratch-gui/build"
 
 echo ">>> [3/3] Deploying to teaching-open..."
 
-# --- JS bundles (root + chunks/) ---
-echo "    JS bundles..."
-cp "$SRC/gui.js"         "$TO_SCRATCH3/gui.js"
-cp "$SRC/player.js"      "$TO_SCRATCH3/player.js"
-cp "$SRC/blocksonly.js"  "$TO_SCRATCH3/blocksonly.js"
-cp "$SRC/gui.js"         "$TO_SCRATCH3/chunks/gui.js"
-cp "$SRC/player.js"      "$TO_SCRATCH3/chunks/player.js"
-cp "$SRC/blocksonly.js"  "$TO_SCRATCH3/chunks/blocksonly.js"
+# Deploy the Lanqu runtime build outputs into one frontend's scratch3/ dir.
+# web/public (legacy Vue) and student-web/public (production React) keep
+# identical build outputs; both are refreshed by this script.
+deploy_build_outputs() {
+    local PUB="$1"
 
-# --- extension worker ---
-cp "$SRC/extension-worker.js" "$TO_SCRATCH3/extension-worker.js"
+    # --- JS bundles (root + chunks/ mirrors) ---
+    cp "$SRC/gui.js"         "$PUB/scratch3/gui.js"
+    cp "$SRC/player.js"      "$PUB/scratch3/player.js"
+    cp "$SRC/blocksonly.js"  "$PUB/scratch3/blocksonly.js"
+    cp "$SRC/gui.js"         "$PUB/scratch3/chunks/gui.js"
+    cp "$SRC/player.js"      "$PUB/scratch3/chunks/player.js"
+    cp "$SRC/blocksonly.js"  "$PUB/scratch3/chunks/blocksonly.js"
 
-# --- fetch-worker (scratch-storage) → scratch3/chunks/ ---
-cp "$SRC"/chunks/fetch-worker.*.js "$TO_SCRATCH3/chunks/" 2>/dev/null || true
+    # --- extension worker ---
+    cp "$SRC/extension-worker.js" "$PUB/scratch3/extension-worker.js"
+
+    # --- fetch-worker (scratch-storage) ---
+    cp "$SRC"/chunks/fetch-worker.*.js "$PUB/scratch3/chunks/" 2>/dev/null || true
+
+    # --- blocks media (scratch-blocks toolbox icons) ---
+    rm -rf "$PUB/scratch3/static/blocks-media/default" "$PUB/scratch3/static/blocks-media/high-contrast"
+    cp -R "$SRC/static/blocks-media/default"       "$PUB/scratch3/static/blocks-media/"
+    cp -R "$SRC/static/blocks-media/high-contrast" "$PUB/scratch3/static/blocks-media/"
+
+    # --- tutorial step chunks (am-steps, etc.) — overwrite, keep maps ---
+    cp "$SRC"/chunks/*-steps.*.js "$PUB/scratch3/chunks/" 2>/dev/null || true
+
+    # --- lazy chunks: numbered (540 = paper.js) + paper loader chunks ---
+    cp "$SRC"/chunks/[0-9]*.js   "$PUB/scratch3/chunks/" 2>/dev/null || true
+    cp "$SRC"/chunks/paper-*.js  "$PUB/scratch3/chunks/" 2>/dev/null || true
+
+    # --- mediapipe assets (video sensing face detection) ---
+    rm -rf "$PUB/scratch3/chunks/mediapipe"
+    cp -R "$SRC/chunks/mediapipe" "$PUB/scratch3/chunks/" 2>/dev/null || true
+}
+
+echo "    JS bundles + chunks → web/public (legacy)..."
+deploy_build_outputs "$TO_PUBLIC"
+
+if [[ -d "$TO_STUDENT_PUBLIC/scratch3" ]]; then
+    echo "    JS bundles + chunks → student-web/public (production)..."
+    deploy_build_outputs "$TO_STUDENT_PUBLIC"
+fi
 
 # --- fetch-worker also at web/public/chunks/ (vue dev server resolves worker
 #     URLs to /chunks/ due to scratch-gui dist's nested publicPath) ---
 mkdir -p "$TO_PUBLIC/chunks"
 cp "$SRC"/chunks/fetch-worker.*.js "$TO_PUBLIC/chunks/" 2>/dev/null || true
-
-# --- blocks media (scratch-blocks toolbox icons) ---
-echo "    blocks-media..."
-rm -rf "$TO_SCRATCH3/static/blocks-media/default" "$TO_SCRATCH3/static/blocks-media/high-contrast"
-cp -R "$SRC/static/blocks-media/default"       "$TO_SCRATCH3/static/blocks-media/"
-cp -R "$SRC/static/blocks-media/high-contrast" "$TO_SCRATCH3/static/blocks-media/"
-
-# --- tutorial step chunks (am-steps, etc.) — overwrite, keep maps ---
-echo "    tutorial chunks..."
-cp "$SRC"/chunks/*-steps.*.js "$TO_SCRATCH3/chunks/" 2>/dev/null || true
 
 # --- Lanqu-owned host pages (canonical copies live in deploy/teaching-open/) ---
 # index.html / player.html carry scratchConfig + backend integration and are NOT
@@ -113,7 +135,7 @@ fi
 
 echo ""
 echo "=== Deploy complete ==="
-echo "Build outputs updated in $TO_SCRATCH3"
+echo "Build outputs updated in web/public/scratch3 (legacy) and student-web/public/scratch3 (production)."
 echo "Host pages synced from deploy/teaching-open/ (see deploy/teaching-open/README.md)."
 echo ""
 echo "Next: restart teaching-open dev server (cd web && yarn serve) to verify."
