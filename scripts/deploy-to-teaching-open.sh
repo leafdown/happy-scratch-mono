@@ -27,15 +27,17 @@ cd "$ROOT"
 DO_BUILD="yes"
 [[ "${1:-}" == "--no-build" ]] && DO_BUILD="no"
 
-# teaching-open scratch3 target (sibling of happy-scratch-mono under Teacher/)
-TO_SCRATCH3="/Users/felixy/Codes/Teacher/teaching-open/web/public/scratch3"
-TO_PUBLIC="/Users/felixy/Codes/Teacher/teaching-open/web/public"
+# teaching-open checkout: a sibling of happy-scratch-mono by default. Override
+# with TEACHING_OPEN_ROOT when the repository lives elsewhere.
+TEACHING_OPEN_ROOT="${TEACHING_OPEN_ROOT:-$ROOT/../teaching-open}"
+TO_SCRATCH3="$TEACHING_OPEN_ROOT/web/public/scratch3"
+TO_PUBLIC="$TEACHING_OPEN_ROOT/web/public"
 # student-web is the production frontend; it has its own copy of scratch3/
-TO_STUDENT_PUBLIC="/Users/felixy/Codes/Teacher/teaching-open/student-web/public"
+TO_STUDENT_PUBLIC="$TEACHING_OPEN_ROOT/student-web/public"
 
 if [[ ! -d "$TO_SCRATCH3" ]]; then
     echo "Target not found: $TO_SCRATCH3"
-    echo "Is teaching-open checked out at /Users/felixy/Codes/Teacher/teaching-open?"
+    echo "Set TEACHING_OPEN_ROOT to the teaching-open checkout directory."
     exit 1
 fi
 
@@ -88,20 +90,14 @@ deploy_build_outputs() {
     # --- extension worker ---
     cp "$SRC/extension-worker.js" "$PUB/scratch3/extension-worker.js"
 
-    # --- fetch-worker (scratch-storage) ---
-    cp "$SRC"/chunks/fetch-worker.*.js "$PUB/scratch3/chunks/" 2>/dev/null || true
-
     # --- blocks media (scratch-blocks toolbox icons) ---
     rm -rf "$PUB/scratch3/static/blocks-media/default" "$PUB/scratch3/static/blocks-media/high-contrast"
     cp -R "$SRC/static/blocks-media/default"       "$PUB/scratch3/static/blocks-media/"
     cp -R "$SRC/static/blocks-media/high-contrast" "$PUB/scratch3/static/blocks-media/"
 
-    # --- tutorial step chunks (am-steps, etc.) — overwrite, keep maps ---
-    cp "$SRC"/chunks/*-steps.*.js "$PUB/scratch3/chunks/" 2>/dev/null || true
-
-    # --- lazy chunks: numbered (540 = paper.js) + paper loader chunks ---
-    cp "$SRC"/chunks/[0-9]*.js   "$PUB/scratch3/chunks/" 2>/dev/null || true
-    cp "$SRC"/chunks/paper-*.js  "$PUB/scratch3/chunks/" 2>/dev/null || true
+    # --- every runtime chunk (fetch-workers, tutorial steps, paper, and any
+    # future lazy chunk) — copy wholesale so new chunk names cannot be missed.
+    cp "$SRC"/chunks/*.js "$PUB/scratch3/chunks/"
 
     # --- mediapipe assets (video sensing face detection) ---
     rm -rf "$PUB/scratch3/chunks/mediapipe"

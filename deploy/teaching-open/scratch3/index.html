@@ -261,10 +261,9 @@
         console.log("作品载入完毕")
       },
       handleDefaultProjectLoaded: () => {
-        //GUI 就绪后主动拉取并注入自定义素材库。
-        //注意:当前 GUI(lanqu-scratch-gui)并不消费 assets.handleBefore*LibraryOpen 那几个
-        //钩子(它们只是占位配置),素材库组件的数据源是 redux dynamicAssets。因此必须在
-        //这里的稳定回调里主动调用 window.scratch.push*Library 才会让自定义素材进素材库。
+        // GUI 就绪后主动拉取并注入自定义素材库。
+        // 素材库组件的数据源是 redux dynamicAssets，因此必须在这里主动调用
+        // window.scratch.push*Library 才会让自定义素材进入素材库。
         loadScratchAssets();
         //默认作品加载完毕
         if(workFileUrl){
@@ -300,47 +299,21 @@
           })
         }
       },
-      //默认项目地址
-      defaultProjectURL: "./static/project.sb3",
       //素材库配置
       assets:{
         //素材库地址:用 qiniuDomain(后端 getCurrentConfig 必返回)。
         //原 CONFIG.qn_base 依赖旧前端写入的 localStorage,新前端未写 qn_base,
         // 改用 getSysConfig 从 pro__SYS_CONFIG 读(React 已写兼容 key)。
-        assetHost: getSysConfig('qiniuDomain') || '',
-        //素材库索引地址
-        defaultIndex:{
-          sprites: "./static/json_index/sprites.json",
-          costumes: "./static/json_index/costumes.json",
-          backdrops: "./static/json_index/backdrops.json",
-          sounds: "./static/json_index/sounds.json"
-        },
-        //注意:当前 GUI 不消费下面这些 handleBefore*LibraryOpen 钩子(它们只是占位配置)。
-        //自定义素材改由 loadScratchAssets() 在 GUI 就绪时主动拉取并 push*Library 注入,
-        //故此处不再在钩子里 getScratchAssets(否则会与主动加载重复,pushAssets 不去重)。
-        handleBeforeSpriteLibraryOpen(){
-          return true;
-        },
-        //拦截造型库打开
-        handleBeforeCostumesLibraryOpen(){
-          return true;
-        },
-        //拦截背景库打开
-        handleBeforeBackdropsLibraryOpen(){
-          return true;
-        },
-        //拦截声音库打开
-        handleBeforeSoundLibraryOpen(){
-          return true;
-        }
+        //自定义素材由 loadScratchAssets() 通过 window.scratch.push*Library 注入。
+        assetHost: getSysConfig('qiniuDomain') || ''
       }
     }
     console.log(getSysConfig('qiniuDomain'))
     // 拉取并注入自定义素材库到 GUI。
     // 后端 getScratchAssets?assetType=X(1背景 2声音 3造型 4角色)返回裸 JSONArray,每元素一个
     // 完整 sprite/背景/sound JSON。GUI 素材库组件从 redux dynamicAssets 读数据,实例化后
-    // 通过 window.scratch.push*Library 注入。只注入一次,避免 pushAssets 不去重导致素材重复。
-    // 未登录时接口返回 500(非白名单),静默跳过即可——GUI 仍会显示 defaultIndex 内置素材。
+    // 通过 window.scratch.push*Library 注入。pushAssets 会按素材 id 去重,重复调用不会产生重复项。
+    // 未登录时接口返回 500(非白名单),静默跳过即可——GUI 仍会显示内置素材。
     var _assetsLoaded = false
     function loadScratchAssets() {
       if (_assetsLoaded) return
