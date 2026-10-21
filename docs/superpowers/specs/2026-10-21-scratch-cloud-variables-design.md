@@ -227,6 +227,7 @@ cloudControl: {
 - 变量名非空且长度不超过 100。
 - value 字符串长度不超过 1024。
 - 创建时检查该 projectId 下变量数不超过 10。
+- `create` 遇到已存在变量时只返回 `ack OK`，不覆盖 Redis 值；否则每次打开项目都会用文件里的快照重置云变量。
 - `sessionPool` 改为 `ConcurrentHashMap<String, CopyOnWriteArrayList<Session>>`。
 - 保留单实例广播实现；在类注释中标明多实例需要 Redis Pub/Sub。
 
@@ -264,7 +265,7 @@ cloudControl: {
 ### 8.3 后端验证
 
 - 编译 `api` 模块。
-- 已有单测覆盖：草稿 projectId 规范化、draft 所有者校验、匿名 `set` 拒绝、登录 `set` 写 Redis、正式作品作者校验、草稿变量上限、变量名/值长度、Redis key 前缀。
+- 已有单测覆盖：草稿 projectId 规范化、draft 所有者校验、匿名 `set` 拒绝、登录 `set` 写 Redis、正式作品作者校验、草稿变量上限、加载项目时 `create` 不覆盖已有值、变量名/值长度、Redis key 前缀。
 - 有 Redis / 登录 token 环境时仍需跑真实 WebSocket 双客户端验证：
   1. `handshake`（匿名可读）。
   2. 匿名 `set` → 收到 `ack FAIL`。
