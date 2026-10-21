@@ -144,16 +144,19 @@ function generatePathFilters(workspaces: Workspace[], workspaceMap: Map<string, 
 const PUBLISH_STEP_MARKER =
     '# update-gha-workflows.ts: insert new "Publish <package>" steps before this line.';
 
+// Workspaces that are internal to this repo and must not be published by the
+// release workflow. `lanqu-scratch-gui` is the host wrapper consumed in-tree.
+const PUBLISH_EXCLUDE = new Set(['lanqu-scratch-gui']);
+
 /**
  * Scans publish.yml for existing "Publish <name>" steps and adds a default
  * publish step for any workspace that doesn't already have one.
  *
  * Packages that should NOT be auto-published (virtual packages, meta-packages,
  * packages with special publish logic already present) are skipped if they
- * already have a step — they are never removed.
+ * already have a step — they are never removed. `PUBLISH_EXCLUDE` lists
+ * workspaces that never get a default step.
  */
-// TODO: Add exclude list for packages that we don't want to auto-publish,
-// as they are introduced to the monorepo.
 function updatePublishWorkflow(content: string, workspaces: Workspace[]): string {
     // Find all existing "- name: Publish <something>" step names
     const existingPublishSteps = new Set<string>();
@@ -166,6 +169,7 @@ function updatePublishWorkflow(content: string, workspaces: Workspace[]): string
     // Determine which workspaces need a new publish step
     const missing: Workspace[] = [];
     for (const ws of workspaces) {
+        if (PUBLISH_EXCLUDE.has(ws.bareName)) continue;
         // Check if there's already a publish step matching this workspace's bare name
         if (existingPublishSteps.has(ws.bareName)) continue;
         // Also check for any step that mentions the full @scratch/ name in its title

@@ -52,3 +52,13 @@ scratch-gui:
 scratch-media-lib-scripts:
   - *global
   - "packages/scratch-media-lib-scripts/**"
+lanqu-scratch-gui:
+  - *global
+  - "packages/lanqu-scratch-gui/**"
+  - "packages/scratch-gui/**"
+  - "packages/scratch-paint/**"
+  - "packages/scratch-render/**"
+  - "packages/scratch-storage/**"
+  - "packages/scratch-svg-renderer/**"
+  - "packages/scratch-vm/**"
+  - "packages/task-herder/**"
