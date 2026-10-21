@@ -362,6 +362,40 @@ describe('CloudManagerHOC', () => {
         expect(CloudProvider).toHaveBeenCalledTimes(2);
     });
 
+    test('projectId changing while cloud data appears connects only once', () => {
+        vm.runtime.hasCloudData = jest.fn(() => false);
+
+        const Component = () => <div />;
+        const WrappedComponent = cloudManagerHOC(Component);
+        const {rerender} = render(
+            <WrappedComponent
+                hasCloudPermission
+                cloudHost="nonEmpty"
+                projectId="old-id"
+                store={store}
+                username="user"
+                vm={vm}
+            />
+        );
+
+        expect(CloudProvider).not.toHaveBeenCalled();
+
+        vm.runtime.hasCloudData = jest.fn(() => true);
+        rerender(
+            <WrappedComponent
+                hasCloudPermission
+                cloudHost="nonEmpty"
+                projectId="new-id"
+                store={store}
+                username="user"
+                vm={vm}
+            />
+        );
+
+        expect(CloudProvider).toHaveBeenCalledTimes(1);
+        expect(vm.setCloudProvider).toHaveBeenCalledTimes(1);
+    });
+
     test('project without cloud data should not trigger cloud connection', () => {
         // Mock the vm runtime function so that has cloud data is not
         // initially true

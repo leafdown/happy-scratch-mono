@@ -18,6 +18,8 @@
     var canShare = true
     var uploadParam = {}
     var workId = urlParams('workId')
+    var fileUploadPreviousWorkId = ''
+    var fileUploadPreviousCloudId = ''
     var unitId = urlParams('unitId')
     var workFileUrl = urlParams('workFile') //SB3路径
     var workName = urlParams('workName') //作业名
@@ -130,6 +132,12 @@
         newButton:{
           show: true,
           handleBefore(){
+            // A new project has no work id yet; switch cloud data to the
+            // per-user draft bucket instead of keeping the previous work id.
+            workId = ''
+            if (window.scratch && window.scratch.setCloudId) {
+              window.scratch.setCloudId('create')
+            }
             return true
           }
         },
@@ -137,7 +145,37 @@
         loadFileButton:{
           show: true,
           handleBefore(){
+            // Called after a local file was selected but before it is loaded.
+            // Move cloud data to a fresh draft bucket first so the new
+            // project's variables are not created inside the work that is
+            // still open.
+            fileUploadPreviousWorkId = workId
+            fileUploadPreviousCloudId = (window.scratch && window.scratch.getCloudId) ? window.scratch.getCloudId() : ''
+            workId = ''
+            if (window.scratch && window.scratch.setCloudId) {
+              window.scratch.setCloudId('create')
+            }
             return true
+          },
+          handleAfter(){
+            // The local project loaded successfully and is now unsaved. The
+            // cloud id already points at the new draft, keep it.
+            fileUploadPreviousWorkId = ''
+            fileUploadPreviousCloudId = ''
+          },
+          handleFailure(){
+            // The file failed to load; the previous project is still open.
+            var previousCloudId = fileUploadPreviousCloudId
+            workId = fileUploadPreviousWorkId || ''
+            fileUploadPreviousWorkId = ''
+            fileUploadPreviousCloudId = ''
+            if (window.scratch && window.scratch.setCloudId) {
+              if (previousCloudId) {
+                window.scratch.setCloudId(previousCloudId)
+              } else if (workId) {
+                window.scratch.setCloudId(workId)
+              }
+            }
           }
         },
         //保存到计算机按钮
@@ -444,11 +482,14 @@
         success: function (res) {
           canShare = true
           if (res.code == 200) {
-             //如果包含云变量
-            if(window.vm.runtime.hasCloudData()){
+            // workId must be updated even when the project has no cloud data;
+            // otherwise the next save creates a new work and a later cloud
+            // variable would still point at the draft bucket.
+            if (res.result && res.result.id) {
               workId = res.result.id
-              //更新cloudId
-              window.scratch.setCloudId(workId)
+              if (window.scratch && window.scratch.setCloudId) {
+                window.scratch.setCloudId(workId)
+              }
             }
             $('#projectTitle').html(uploadParam.projectTitle)
             // 保存(存草稿)与提交共用本弹窗,按状态显示对应文案

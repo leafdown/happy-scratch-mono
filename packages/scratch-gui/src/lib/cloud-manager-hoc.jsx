@@ -55,21 +55,13 @@ const cloudManagerHOC = function (WrappedComponent) {
             }
         }
         componentDidUpdate (prevProps) {
-            // TODO need to add cloud provider disconnection logic and cloud data clearing logic
-            // when loading a new project e.g. via file upload
-            // (and eventually move it out of the vm.clear function)
-
-            if (this.shouldConnect(this.props) && !this.shouldConnect(prevProps)) {
-                this.connectToCloud();
-            }
-
             if (this.shouldDisconnect(this.props, prevProps)) {
                 this.disconnectFromCloud();
-                // A project/user change makes the existing connection stale.
-                // Reconnect immediately when the new props are still valid.
-                if (this.shouldConnect(this.props)) {
-                    this.connectToCloud();
-                }
+            }
+            // A project/user change makes the existing connection stale.
+            // Reconnect immediately when the new props are still valid.
+            if (this.shouldConnect(this.props)) {
+                this.connectToCloud();
             }
         }
         componentWillUnmount () {

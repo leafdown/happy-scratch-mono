@@ -93,8 +93,9 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                 userOwnsProject
             } = this.props;
             const thisFileInput = e.target;
-            if (thisFileInput.files) { // Don't attempt to load if no file was selected
-                this.fileToUpload = thisFileInput.files[0];
+            const selectedFile = thisFileInput.files && thisFileInput.files[0];
+            if (selectedFile) { // Don't attempt to load if no file was selected
+                this.fileToUpload = selectedFile;
 
                 // If user owns the project, or user has changed the project,
                 // we must confirm with the user that they really intend to
@@ -107,12 +108,21 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                     );
                 }
                 if (uploadAllowed) {
+                    if (this.props.onBeforeProjectUpload &&
+                        this.props.onBeforeProjectUpload() === false) {
+                        this.removeFileObjects();
+                        return;
+                    }
                     // cues step 4
                     this.props.requestProjectUpload(loadingState);
                 } else {
                     // skips ahead to step 7
                     this.removeFileObjects();
                 }
+            } else {
+                // The user dismissed the file picker; do not switch project
+                // state or fire host hooks.
+                this.removeFileObjects();
             }
         }
         // step 4 is below, in mapDispatchToProps
@@ -151,6 +161,11 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                     })
                     .then(() => {
                         this.props.onLoadingFinished(this.props.loadingState, loadingSuccess);
+                        if (loadingSuccess && this.props.onAfterProjectUpload) {
+                            this.props.onAfterProjectUpload();
+                        } else if (!loadingSuccess && this.props.onProjectUploadFailed) {
+                            this.props.onProjectUploadFailed();
+                        }
                         // go back to step 7: whether project loading succeeded
                         // or failed, reset file objects
                         this.removeFileObjects();
@@ -177,6 +192,9 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                 loadingState,
                 onLoadingFinished,
                 onLoadingStarted,
+                onAfterProjectUpload,
+                onBeforeProjectUpload,
+                onProjectUploadFailed,
                 onSetProjectTitle,
                 projectChanged,
                 requestProjectUpload: requestProjectUploadProp,
@@ -207,6 +225,9 @@ const SBFileUploaderHOC = function (WrappedComponent) {
         loadingState: PropTypes.oneOf(LoadingStates),
         onLoadingFinished: PropTypes.func,
         onLoadingStarted: PropTypes.func,
+        onAfterProjectUpload: PropTypes.func,
+        onBeforeProjectUpload: PropTypes.func,
+        onProjectUploadFailed: PropTypes.func,
         onSetProjectTitle: PropTypes.func,
         projectChanged: PropTypes.bool,
         requestProjectUpload: PropTypes.func,

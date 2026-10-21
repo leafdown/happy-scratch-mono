@@ -184,6 +184,9 @@ class MenuBar extends React.Component {
             this.props.intl.formatMessage(sharedMessages.replaceProjectWarning)
         );
         if (readyToReplaceProject) {
+            if (this.props.onBeforeNewProject && this.props.onBeforeNewProject() === false) {
+                return;
+            }
             this.props.onClickNew(this.props.canSave && this.props.canCreateNew);
         }
     }
@@ -714,6 +717,7 @@ MenuBar.propTypes = {
             })
         )
     ]),
+    onBeforeNewProject: PropTypes.func,
     onClickLogin: PropTypes.func,
     onClickLogo: PropTypes.func,
     onClickMode: PropTypes.func,

@@ -34,10 +34,10 @@ class LanquCloudProvider {
         this.connection = null;
         this._connectionTimeout = null;
 
-        this.openConnection();
-
         // Rate limit to 10 messages/sec, matching v14.
         this.sendCloudData = throttle(this._sendCloudData, 100);
+
+        this.openConnection();
     }
 
     isConnectedOrConnecting () {
@@ -87,14 +87,25 @@ class LanquCloudProvider {
     }
 
     onOpen () {
+        if (!this.isTryingToConnect) return;
         this.connectionAttempts = 1;
+        // Cancel any trailing set from the previous connection so the
+        // handshake is always the first message on the new connection.
+        if (this.sendCloudData && typeof this.sendCloudData.cancel === 'function') {
+            this.sendCloudData.cancel();
+        }
         this.writeToServer('handshake');
         log.info('Successfully connected to clouddata server.');
-        this.queuedData.forEach(data => this.sendCloudData(data));
+        // Management messages must not go through the throttle: throttle only
+        // keeps the first and last argument, which would drop creates when a
+        // project with multiple cloud variables loads.
+        this.queuedData.forEach(entry => this._sendCloudData(entry.data));
         this.queuedData = [];
     }
 
     onClose () {
+        // Ignore close events after requestCloseConnection()/clear().
+        if (!this.isTryingToConnect) return;
         log.info('Closed connection to websocket');
         const randomizedTimeout = this.randomizeDuration(this.exponentialTimeout());
         this.setTimeout(this.openConnection.bind(this), randomizedTimeout);
@@ -142,10 +153,38 @@ class LanquCloudProvider {
         if (typeof dataValue !== 'undefined' && dataValue !== null) msg.value = dataValue;
 
         const dataToWrite = JSON.stringify(msg);
+        const isManagementMessage = (
+            msg.method === 'create' ||
+            msg.method === 'delete' ||
+            msg.method === 'rename'
+        );
         if (this.connection && this.connection.readyState === WebSocket.OPEN) {
-            this.sendCloudData(dataToWrite);
-        } else if (msg.method === 'create' || msg.method === 'delete' || msg.method === 'rename') {
-            this.queuedData.push(dataToWrite);
+            if (isManagementMessage) {
+                // Flush any pending set first: rename/delete must see the
+                // latest value, and a trailing set after a rename would
+                // recreate the old variable name.
+                if (this.sendCloudData && typeof this.sendCloudData.flush === 'function') {
+                    this.sendCloudData.flush();
+                }
+                // Do not throttle management messages: lodash.throttle would
+                // silently drop all but the first and last in a burst.
+                this._sendCloudData(dataToWrite);
+            } else {
+                this.sendCloudData(dataToWrite);
+            }
+        } else {
+            const entry = {method: msg.method, name: msg.name, data: dataToWrite};
+            if (msg.method === 'set') {
+                // Keep only the latest queued value for each variable so a
+                // long outage cannot grow the queue without bound.
+                const existingIndex = this.queuedData.findIndex(
+                    queued => queued.method === 'set' && queued.name === msg.name
+                );
+                if (existingIndex !== -1) {
+                    this.queuedData.splice(existingIndex, 1);
+                }
+            }
+            this.queuedData.push(entry);
         }
     }
 
@@ -173,12 +212,17 @@ class LanquCloudProvider {
 
     requestCloseConnection () {
         try {
-            if (this.connection &&
-                this.connection.readyState !== WebSocket.CLOSING &&
-                this.connection.readyState !== WebSocket.CLOSED) {
+            if (this.connection) {
+                // Neutralize handlers even if the socket is already closing:
+                // its onclose can fire after clear() and schedule a reconnect.
+                this.connection.onopen = () => {};
+                this.connection.onmessage = () => {};
                 this.connection.onclose = () => {};
                 this.connection.onerror = () => {};
-                this.connection.close();
+                if (this.connection.readyState !== WebSocket.CLOSING &&
+                    this.connection.readyState !== WebSocket.CLOSED) {
+                    this.connection.close();
+                }
             }
         } finally {
             this.clear();

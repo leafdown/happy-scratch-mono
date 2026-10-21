@@ -59,8 +59,8 @@
       },
       cloudData:{
         // 没有 workId/workUrl 时没有可归属的云变量空间，不建立连接。
-        enable: !!(workId || workUrl),
-        id: workId || workUrl || '',
+        enable: !!(workUrl || workId),
+        id: workUrl || workId || '',
         api: window.location.host + "/api/websocket/scratch/cloudData"
       },
       projectInfo: {

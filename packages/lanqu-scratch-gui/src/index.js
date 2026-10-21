@@ -68,7 +68,7 @@ const createEasyRoot = (hostConfig, container) => {
 
 /**
  * Derive the patch-driven props from scratchConfig. These map to the scratch-gui
- * source patches (P1..P13) — each is an optional extension point that defaults to
+ * source patches (P1..P16) — each is an optional extension point that defaults to
  * no-op when undefined.
  */
 const buildPatchProps = (config, extraProps = {}) => {
@@ -101,6 +101,18 @@ const buildPatchProps = (config, extraProps = {}) => {
             props.showTutorialsButton = config.menuBar.helpButton.show !== false;
         }
         props.showDebugButton = !!(config.menuBar.debugButton && config.menuBar.debugButton.show === true);
+        if (config.menuBar.newButton && config.menuBar.newButton.handleBefore) {
+            props.onBeforeNewProject = config.menuBar.newButton.handleBefore;
+        }
+        if (config.menuBar.loadFileButton && config.menuBar.loadFileButton.handleBefore) {
+            props.onBeforeProjectUpload = config.menuBar.loadFileButton.handleBefore;
+        }
+        if (config.menuBar.loadFileButton && config.menuBar.loadFileButton.handleAfter) {
+            props.onAfterProjectUpload = config.menuBar.loadFileButton.handleAfter;
+        }
+        if (config.menuBar.loadFileButton && config.menuBar.loadFileButton.handleFailure) {
+            props.onProjectUploadFailed = config.menuBar.loadFileButton.handleFailure;
+        }
     }
 
     // Blocks (P3/P4): scale + hide config

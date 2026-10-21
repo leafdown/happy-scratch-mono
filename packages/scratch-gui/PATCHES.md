@@ -28,6 +28,8 @@ To ease upstream syncs (see `scripts/upgrade-from-upstream.sh`), all patches are
 | P12 | `containers/controls.jsx` + `components/controls/controls.jsx` | Green flag/stop visibility + before hooks |
 | P13 | `components/stage-header/stage-header.jsx` | Fullscreen button visibility + before hooks |
 | P14 | `lib/cloud-manager-hoc.jsx` | Optional `cloudControl` override for projectId/username/enable/write, and reconnect on stale connection |
+| P15 | `components/gui/gui.jsx` + `components/menu-bar/menu-bar.jsx` | Optional `onBeforeNewProject` hook, called after confirmation |
+| P16 | `lib/sb-file-uploader-hoc.jsx` | Optional `onBeforeProjectUpload` / `onAfterProjectUpload` / `onProjectUploadFailed` hooks around a local project load |
 | — | `components/stage-wrapper/stage-wrapper.jsx` | Forward `stageHeaderConfig`/`controlsConfig` |
 
 ## Not applied (deferred / optional)

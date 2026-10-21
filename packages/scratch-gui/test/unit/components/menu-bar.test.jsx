@@ -76,4 +76,40 @@ describe('MenuBar Component', () => {
             expect(onClickAbout).toHaveBeenCalledTimes(0);
         });
     });
+
+    describe('new project hook', () => {
+        test('calls onBeforeNewProject before creating a new project', () => {
+            const onBeforeNewProject = jest.fn(() => true);
+            const actionCount = store.getActions().length;
+            const {getByLabelText, getByText} = renderWithIntl(getComponent({
+                canManageFiles: true,
+                confirmReadyToReplaceProject: () => true,
+                onBeforeNewProject
+            }));
+
+            fireEvent.click(getByLabelText('File menu'));
+            fireEvent.click(getByText('New'));
+
+            expect(onBeforeNewProject).toHaveBeenCalledTimes(1);
+            expect(store.getActions().slice(actionCount)).toContainEqual(
+                expect.objectContaining({type: 'scratch-gui/project-state/START_FETCHING_NEW'})
+            );
+        });
+
+        test('does not create a new project when onBeforeNewProject returns false', () => {
+            const onBeforeNewProject = jest.fn(() => false);
+            const actionCount = store.getActions().length;
+            const {getByLabelText, getByText} = renderWithIntl(getComponent({
+                canManageFiles: true,
+                confirmReadyToReplaceProject: () => true,
+                onBeforeNewProject
+            }));
+
+            fireEvent.click(getByLabelText('File menu'));
+            fireEvent.click(getByText('New'));
+
+            expect(onBeforeNewProject).toHaveBeenCalledTimes(1);
+            expect(store.getActions().length).toBe(actionCount);
+        });
+    });
 });

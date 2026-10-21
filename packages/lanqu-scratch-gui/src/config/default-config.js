@@ -40,7 +40,9 @@ const defaultConfig = {
         },
         loadFileButton: {
             show: true,
-            handleBefore: () => true
+            handleBefore: () => true,
+            handleAfter: () => {},
+            handleFailure: () => {}
         },
         saveFileButton: {
             show: true,
