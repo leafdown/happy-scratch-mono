@@ -35,10 +35,10 @@ scratchConfig.assets.assetHost 取 `getSysConfig('qiniuDomain')`，让 Scratch �
 
 ### 自定义素材库注入
 
-当前 GUI（lanqu-scratch-gui）不消费 `assets.handleBefore*LibraryOpen` 钩子；index.html 在
-`handleDefaultProjectLoaded` 里调用 `loadScratchAssets()`（只注入一次），通过
-`window.scratch.push*Library` 把后端 `getScratchAssets?assetType=X` 返回的自定义素材
-注入 redux dynamicAssets。
+自定义素材通过 `window.scratch.push*Library` 注入：index.html 在
+`handleDefaultProjectLoaded` 里调用 `loadScratchAssets()`，把后端
+`getScratchAssets?assetType=X` 返回的完整 sprite/背景/声音 JSON 写入 redux
+dynamicAssets。`pushAssets` 会按素材 id 去重，重复调用不会产生重复项。
 
 ### 上传 / 登录
 

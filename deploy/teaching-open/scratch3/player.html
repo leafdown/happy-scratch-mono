@@ -27,8 +27,8 @@
        (水平),没有 justify-content:center,舞台纵向贴顶。这里补垂直居中。 */
     #scratch .stage-wrapper_full-screen_VkfX3{ justify-content:center; }
     /* 宿主页面自带全屏按钮(nofs=1)时,隐藏 Scratch GUI 内置全屏按钮,避免页面上
-       出现两个全屏按钮。GUI 的 showFullscreenButton 配置在 v14 standalone 渲染下
-       不生效(已实测),故用 .nofs 类 + CSS 隐藏兜底。 */
+       出现两个全屏按钮。stageArea.fullscreenButton.show=false 也可关闭内置按钮;
+       nofs 是宿主既有的 URL 参数,保留 CSS 兜底以兼容旧链接。 */
     .nofs button[aria-label="Enter full screen mode"],
     .nofs button[aria-label*="full screen" i],
     .nofs button[aria-label*="全屏"],
