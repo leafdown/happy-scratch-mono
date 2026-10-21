@@ -1,5 +1,5 @@
 /**
- * @lanqu/scratch-gui — B-plan wrapper around @scratch/scratch-gui (v14).
+ * @lanqu/scratch-gui — B-plan wrapper around @scratch/scratch-gui (v15).
  *
  * Port of easy-scratch3's customization model: host pages inject
  * `window.scratchConfig` (declarative) and call `window.scratch.*` (imperative).
@@ -113,6 +113,18 @@ const buildPatchProps = (config, extraProps = {}) => {
         if (config.menuBar.loadFileButton && config.menuBar.loadFileButton.handleFailure) {
             props.onProjectUploadFailed = config.menuBar.loadFileButton.handleFailure;
         }
+        if (config.menuBar.saveFileButton && config.menuBar.saveFileButton.handleBefore) {
+            props.onBeforeSaveToComputer = config.menuBar.saveFileButton.handleBefore;
+        }
+        if (config.menuBar.helpButton && config.menuBar.helpButton.handleBefore) {
+            props.onBeforeHelp = config.menuBar.helpButton.handleBefore;
+        }
+        // File menu item visibility (P8): hide individual New/Load/Save entries.
+        props.showNewButton = !config.menuBar.newButton || config.menuBar.newButton.show !== false;
+        props.showLoadButton = !config.menuBar.loadFileButton || config.menuBar.loadFileButton.show !== false;
+        props.showSaveButton = !config.menuBar.saveFileButton || config.menuBar.saveFileButton.show !== false;
+        props.showTurboModeButton = !config.menuBar.turboModeButton ||
+            config.menuBar.turboModeButton.show !== false;
     }
 
     // Blocks (P3/P4): scale + hide config
@@ -144,8 +156,9 @@ const buildPatchProps = (config, extraProps = {}) => {
         };
     }
 
-    // Logo (native props: logo URL + onClickLogo)
+    // Logo (native props: logo URL + onClickLogo, patch: showLogo)
     if (config.logo) {
+        props.showLogo = config.logo.show !== false;
         if (config.logo.url) {
             props.logo = config.logo.url;
         }
@@ -161,10 +174,14 @@ const buildPatchProps = (config, extraProps = {}) => {
         const ms = config.menuBar.myStuff || {};
         props.accountMenuOptions = {
             canHaveSession: ua.show !== false,
-            avatarUrl: ua.avatar,
+            avatarUrl: ua.avatar || (config.projectInfo && config.projectInfo.authorAvatar),
             myStuffUrl: ms.show !== false ? (ms.url || '') : undefined,
             accountSettingsUrl: '/account/settings/BaseSetting'
         };
+        if (ua.handleClick) {
+            // Replaces the default "open account menu" click on the avatar.
+            props.accountMenuOptions.onClick = ua.handleClick;
+        }
         if (ua.username) {
             props.username = ua.username;
         }
@@ -188,23 +205,114 @@ const buildPatchProps = (config, extraProps = {}) => {
         props.hasCloudPermission = true;
     }
 
-    // Project loaded callback (native prop). onVmInit is intercepted by
-    // scratchApiHOC, which forwards to config.handleVmInitialized.
-    if (config.handleProjectLoaded) {
-        props.onProjectLoaded = config.handleProjectLoaded;
-    }
+    // handleProjectLoaded is driven by the VM's PROJECT_LOADED event inside
+    // scratchApiHOC, so it fires for window.scratch.loadProject() too (the GUI
+    // redux isShowingProject flag does not change for direct VM loads).
 
     return props;
 };
 
-/**
- * React component form. For hosts that mount via JSX rather than createEasyRoot.
- */
-const EasyScratch = props => {
-    // Component form defers to createEasyRoot on mount. Stage 6 will flesh this
-    // out; for now the imperative createEasyRoot is the primary entry point.
-    throw new Error('EasyScratch component form is not implemented yet; use createEasyRoot');
+/** Copy the props that belong to the editor root, dropping EasyScratch's own. */
+const getEditorProps = props => {
+    const editorProps = {...props};
+    delete editorProps.scratchConfig;
+    delete editorProps.config;
+    delete editorProps.className;
+    delete editorProps.style;
+    delete editorProps.children;
+    return editorProps;
 };
+
+/** Shallow equality for editor props; functions and objects compare by identity. */
+const shallowEqual = (a, b) => {
+    if (a === b) return true;
+    const aKeys = Object.keys(a);
+    const bKeys = Object.keys(b);
+    if (aKeys.length !== bKeys.length) return false;
+    return aKeys.every(key => Object.prototype.hasOwnProperty.call(b, key) && a[key] === b[key]);
+};
+
+/**
+ * React component form of the editor. Mount it into a sized container:
+ *
+ *   <EasyScratch scratchConfig={config} style={{height: '100vh'}} />
+ *
+ * The config (`scratchConfig`, or its alias `config`) is read once when the
+ * component mounts; remount the component (for example by changing its `key`)
+ * to boot with a different config. Remaining props are forwarded to the editor
+ * root's render(), and a ref receives this component instance, whose
+ * getRoot()/unmount()/config/store expose the createEasyRoot() handle.
+ *
+ * Implemented as a class component on purpose: the UMD build bundles its own
+ * React, so hooks in a function component would resolve the wrong dispatcher
+ * when a host renders it with a different React copy.
+ */
+class EasyScratch extends React.Component {
+    constructor (props) {
+        super(props);
+        const hostConfig = props.scratchConfig || props.config || {};
+        // isPlayerOnly is a boot-time EditorState flag, so fold the prop (when
+        // supplied) into the config before createEasyRoot() builds EditorState.
+        this.hostConfig = props.isPlayerOnly === undefined ?
+            hostConfig :
+            {...hostConfig, isPlayerOnly: props.isPlayerOnly};
+        this.containerRef = React.createRef();
+        this.root = null;
+        this.forwardedProps = null;
+    }
+
+    componentDidMount () {
+        if (!this.containerRef.current) return;
+        this.root = createEasyRoot(this.hostConfig, this.containerRef.current);
+        this.forwardEditorProps();
+    }
+
+    componentDidUpdate () {
+        this.forwardEditorProps();
+    }
+
+    componentWillUnmount () {
+        if (this.root) this.root.unmount();
+        this.root = null;
+        this.forwardedProps = null;
+    }
+
+    /** Push non-config props into the editor root, skipping unchanged values. */
+    forwardEditorProps () {
+        if (!this.root) return;
+        const editorProps = getEditorProps(this.props);
+        if (this.forwardedProps && shallowEqual(this.forwardedProps, editorProps)) return;
+        this.forwardedProps = editorProps;
+        this.root.render(editorProps);
+    }
+
+    /** The createEasyRoot() handle for the mounted editor. */
+    getRoot () {
+        return this.root;
+    }
+
+    unmount () {
+        if (this.root) this.root.unmount();
+    }
+
+    get config () {
+        return this.root && this.root.config;
+    }
+
+    get store () {
+        return this.root && this.root.store;
+    }
+
+    render () {
+        return React.createElement('div', {
+            ref: this.containerRef,
+            className: this.props.className,
+            style: {width: '100%', height: '100%', ...this.props.style}
+        });
+    }
+}
+
+EasyScratch.displayName = 'EasyScratch';
 
 /**
  * Inject global CSS overrides for Lanqu visual tweaks. Additive — only adds

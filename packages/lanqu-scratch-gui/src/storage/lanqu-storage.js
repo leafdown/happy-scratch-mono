@@ -9,24 +9,17 @@
  * (packages/scratch-gui/src/lib/legacy-storage.ts). Stage 2 will refine asset/project
  * host configuration; stage 1 just needs a working storage so the editor renders.
  */
-import {ScratchStorage} from 'scratch-storage';
+import {ScratchStorage} from '@scratch/scratch-storage';
 import {buildDefaultProject} from '@scratch/scratch-gui/standalone';
 import {LanquBackpackStorage} from './lanqu-backpack-storage.js';
 import {LanquCloudProvider} from './lanqu-cloud-provider.js';
 
 const createLanquStorage = config => {
-    if (typeof console !== 'undefined') console.log('[storage] assetHost:', config.assets && config.assets.assetHost, 'fallback:', !config.assets || !config.assets.assetHost);
     const scratchStorage = new ScratchStorage();
     // Hosts are mutable (set via GUIStorage setters); web store configs read them via refs.
     const projectHostRef = {value: 'https://projects.scratch.mit.edu'};
     const projectTokenRef = {value: null};
     const assetHostRef = {value: (config.assets && config.assets.assetHost) || 'https://assets.scratch.mit.edu'};
-    // setAssetHost 防 MIT 覆盖
-    function safeSetAssetHost(host) {
-        if (host && !host.includes('assets.scratch.mit.edu') && !host.includes('cdn.assets.scratch.mit.edu')) {
-            assetHostRef.value = host;
-        }
-    }
 
     const getProjectGetConfig = projectAsset => {
         const path = `${projectHostRef.value}/${projectAsset.assetId}`;
@@ -35,9 +28,10 @@ const createLanquStorage = config => {
     const getProjectCreateConfig = () => ({url: `${projectHostRef.value}/`, withCredentials: true});
     const getProjectUpdateConfig = projectAsset => ({url: `${projectHostRef.value}/${projectAsset.assetId}`, withCredentials: true});
     const buildAssetGetUrl = (assetId, dataFormat) => {
-        // 自定义 assetHost(如 storage.lanqu.vip)不走 /get/ 后缀
-        // MIT 官方 CDN 才加 /get/ (https://assets.scratch.mit.edu)
-        const suffix = assetHostRef.value === 'https://assets.scratch.mit.edu' ? '/get/' : '';
+        // The MIT CDN (assets.scratch.mit.edu and its cdn. variant) expects a
+        // /get/ suffix. Lanqu-style asset hosts (for example storage.lanqu.vip)
+        // serve /internalapi/asset/<id>.<ext> directly.
+        const suffix = assetHostRef.value.includes('assets.scratch.mit.edu') ? '/get/' : '';
         return `${assetHostRef.value}/internalapi/asset/${assetId}.${dataFormat}${suffix}`;
     };
     const getAssetGetConfig = asset => buildAssetGetUrl(asset.assetId, asset.dataFormat);
@@ -76,27 +70,6 @@ const createLanquStorage = config => {
         asset.id
     ));
 
-    // 强制重写 scratchStorage 内部已注册的 asset web store 的 getAssetGetConfig
-    // 因为 project-fetcher-hoc 挂载后会用 defaultProps(MIT) 调用 setAssetHost 覆盖,
-    // 且 scratch-gui 打包时内部引用的 ScratchStorage 可能与 lanqu 的不同实例。
-    // 通过在 addWebStore 完成后直接篡改内部 store 的 getConfig 来兜底。
-    if (scratchStorage._webStores) {
-        const assetTypes = [scratchStorage.AssetType.ImageVector, scratchStorage.AssetType.ImageBitmap, scratchStorage.AssetType.Sound];
-        for (const webStore of scratchStorage._webStores) {
-            if (webStore.assetTypes && assetTypes.some(t => webStore.assetTypes.includes(t))) {
-                const originalGetConfig = webStore.getConfig;
-                webStore.getConfig = (asset) => {
-                    const cfg = originalGetConfig(asset);
-                    if (typeof cfg === 'string' && cfg.includes('assets.scratch.mit.edu')) {
-                        return cfg.replace('https://assets.scratch.mit.edu', assetHostRef.value)
-                                   .replace('/get/', '');
-                    }
-                    return cfg;
-                };
-            }
-        }
-    }
-
     const backpackStorage = config.backpack && config.backpack.enable
         ? new LanquBackpackStorage({
             host: config.backpack.api,
@@ -129,8 +102,9 @@ const createLanquStorage = config => {
         setProjectToken: token => { projectTokenRef.value = token; },
         setProjectMetadata: () => {},
         setAssetHost: host => {
-            // project-fetcher-hoc 挂载时用 defaultProps(MIT)覆盖,忽略 MIT 地址
-            if (host && !host.includes('assets.scratch.mit.edu') && !host.includes('cdn.assets.scratch.mit.edu')) {
+            // project-fetcher-hoc mounts with its MIT default and calls
+            // setAssetHost; ignore those so a configured host is not lost.
+            if (host && !host.includes('assets.scratch.mit.edu')) {
                 assetHostRef.value = host;
             }
         },

@@ -62,8 +62,7 @@ const defaultConfig = {
         userAvatar: {
             show: true,
             username: '',
-            avatar: '',
-            handleClick: () => {}
+            avatar: ''
         },
         customButtons: []
     },
@@ -91,22 +90,16 @@ const defaultConfig = {
         height: 360
     },
     assets: {
-        assetHost: '',
-        defaultIndex: {
-            sprites: '',
-            costumes: '',
-            backdrops: '',
-            sounds: ''
-        },
-        handleBeforeSpriteLibraryOpen: () => true,
-        handleBeforeCostumesLibraryOpen: () => true,
-        handleBeforeBackdropsLibraryOpen: () => true,
-        handleBeforeSoundLibraryOpen: () => true
+        // Host prefix for project and asset URLs (for example //storage.lanqu.vip).
+        // Custom library content is pushed at runtime via window.scratch.push*Library.
+        assetHost: ''
     },
+    // Boot in player-only mode. Only affects the initial EditorState; use
+    // window.scratch.setPlayerOnly() to switch later.
+    isPlayerOnly: false,
     handleVmInitialized: () => {},
     handleProjectLoaded: () => {},
-    handleDefaultProjectLoaded: () => {},
-    defaultProjectURL: ''
+    handleDefaultProjectLoaded: () => {}
 };
 
 /**
