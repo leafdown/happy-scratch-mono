@@ -13,6 +13,8 @@ export interface AccountMenuOptions {
     myClassesUrl?: string;
     myClassUrl?: string;
     accountSettingsUrl?: string;
+    /** Replaces the avatar button's default "open menu" behavior. */
+    onClick?: () => void;
 }
 
 export const AccountMenuOptionsPropTypes = PropTypes.shape({
@@ -27,5 +29,6 @@ export const AccountMenuOptionsPropTypes = PropTypes.shape({
     profileUrl: PropTypes.string,
     myClassesUrl: PropTypes.string,
     myClassUrl: PropTypes.string,
-    accountSettingsUrl: PropTypes.string
+    accountSettingsUrl: PropTypes.string,
+    onClick: PropTypes.func
 });

@@ -34,6 +34,9 @@ const FileMenu = ({
     onStartSelectingFileUpload,
     getSaveToComputerHandler,
     remixMessage,
+    showNewButton,
+    showLoadButton,
+    showSaveButton,
     depth
 }) => {
     const intl = useIntl();
@@ -98,15 +101,17 @@ const FileMenu = ({
                 place={isRtl ? 'left' : 'right'}
                 onRequestClose={handleOnClose}
             >
-                <MenuSection>
-                    <MenuItem
-                        onClick={onClickNew}
-                        isDataMenuItem
-                        onParentKeyDown={handleKeyDownOpenMenu}
-                    >
-                        {newProjectMessage}
-                    </MenuItem>
-                </MenuSection>
+                {showNewButton !== false && (
+                    <MenuSection>
+                        <MenuItem
+                            onClick={onClickNew}
+                            isDataMenuItem
+                            onParentKeyDown={handleKeyDownOpenMenu}
+                        >
+                            {newProjectMessage}
+                        </MenuItem>
+                    </MenuSection>
+                )}
                 {(canSave || canCreateCopy || canRemix) && (
                     <MenuSection>
                         {canSave && (
@@ -138,29 +143,35 @@ const FileMenu = ({
                         )}
                     </MenuSection>
                 )}
-                <MenuSection>
-                    <MenuItem
-                        onClick={onStartSelectingFileUpload}
-                        isDataMenuItem
-                        onParentKeyDown={handleKeyDownOpenMenu}
-                    >
-                        {intl.formatMessage(sharedMessages.loadFromComputerTitle)}
-                    </MenuItem>
-                    <SB3Downloader>{(className, downloadProjectCallback) => (
-                        <MenuItem
-                            className={className}
-                            onClick={getSaveToComputerHandler(downloadProjectCallback)}
-                            isDataMenuItem
-                            onParentKeyDown={handleKeyDownOpenMenu}
-                        >
-                            <FormattedMessage
-                                defaultMessage="Save to your computer"
-                                description="Menu bar item for downloading a project to your computer" // eslint-disable-line @stylistic/max-len
-                                id="gui.menuBar.downloadToComputer"
-                            />
-                        </MenuItem>
-                    )}</SB3Downloader>
-                </MenuSection>
+                {(showLoadButton !== false || showSaveButton !== false) && (
+                    <MenuSection>
+                        {showLoadButton !== false && (
+                            <MenuItem
+                                onClick={onStartSelectingFileUpload}
+                                isDataMenuItem
+                                onParentKeyDown={handleKeyDownOpenMenu}
+                            >
+                                {intl.formatMessage(sharedMessages.loadFromComputerTitle)}
+                            </MenuItem>
+                        )}
+                        {showSaveButton !== false && (
+                            <SB3Downloader>{(className, downloadProjectCallback) => (
+                                <MenuItem
+                                    className={className}
+                                    onClick={getSaveToComputerHandler(downloadProjectCallback)}
+                                    isDataMenuItem
+                                    onParentKeyDown={handleKeyDownOpenMenu}
+                                >
+                                    <FormattedMessage
+                                        defaultMessage="Save to your computer"
+                                        description="Menu bar item for downloading a project to your computer" // eslint-disable-line @stylistic/max-len
+                                        id="gui.menuBar.downloadToComputer"
+                                    />
+                                </MenuItem>
+                            )}</SB3Downloader>
+                        )}
+                    </MenuSection>
+                )}
             </MenuBarMenu>
         </button>
     );
@@ -178,6 +189,9 @@ FileMenu.propTypes = {
     onClickNew: PropTypes.func.isRequired,
     getSaveToComputerHandler: PropTypes.func.isRequired,
     remixMessage: PropTypes.node,
+    showNewButton: PropTypes.bool,
+    showLoadButton: PropTypes.bool,
+    showSaveButton: PropTypes.bool,
     depth: PropTypes.number
 };
 

@@ -346,19 +346,19 @@ const StageHeaderComponent = function (props) {
                         {stageControls}
                         <div className={styles.rightSection}>
                             {(!stageHeaderConfig || stageHeaderConfig.showFullscreenButton !== false) && (
-                            <Button
-                                className={styles.stageButton}
-                                onClick={handleEnterFullScreen}
-                                aria-label={intl.formatMessage(messages.fullStageSizeMessage)}
-                            >
-                                <img
-                                    alt={intl.formatMessage(messages.fullStageSizeMessage)}
-                                    className={styles.stageButtonIcon}
-                                    draggable={false}
-                                    src={fullScreenIcon}
-                                    title={intl.formatMessage(messages.fullscreenControl)}
-                                />
-                            </Button>
+                                <Button
+                                    className={styles.stageButton}
+                                    onClick={handleEnterFullScreen}
+                                    aria-label={intl.formatMessage(messages.fullStageSizeMessage)}
+                                >
+                                    <img
+                                        alt={intl.formatMessage(messages.fullStageSizeMessage)}
+                                        className={styles.stageButtonIcon}
+                                        draggable={false}
+                                        src={fullScreenIcon}
+                                        title={intl.formatMessage(messages.fullscreenControl)}
+                                    />
+                                </Button>
                             )}
                         </div>
                     </div>

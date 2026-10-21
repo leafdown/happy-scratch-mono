@@ -92,6 +92,17 @@ StageWrapperComponent.propTypes = {
     userOwnsProject: PropTypes.bool,
     onUpdateProjectThumbnail: PropTypes.func,
     stageSize: PropTypes.oneOf(Object.keys(STAGE_DISPLAY_SIZES)).isRequired,
+    stageHeaderConfig: PropTypes.shape({
+        showFullscreenButton: PropTypes.bool,
+        onBeforeSetStageFull: PropTypes.func,
+        onBeforeSetStageUnFull: PropTypes.func
+    }),
+    controlsConfig: PropTypes.shape({
+        showStartButton: PropTypes.bool,
+        showStopButton: PropTypes.bool,
+        onBeforeStart: PropTypes.func,
+        onBeforeStop: PropTypes.func
+    }),
     vm: PropTypes.instanceOf(VM).isRequired
 };
 

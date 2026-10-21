@@ -36,7 +36,8 @@ const AccountMenu = ({
         myClassesUrl,
         myClassUrl,
         accountSettingsUrl,
-        canLogout
+        canLogout,
+        onClick
     } = menuOpts;
 
     const intl = useIntl();
@@ -60,8 +61,11 @@ const AccountMenu = ({
             ref={menuRef}
         >
             <button
-                onClick={handleOnOpen}
-                onKeyDown={handleKeyDown}
+                onClick={onClick || handleOnOpen}
+                // With a custom click handler the account dropdown is unused;
+                // let the browser fire click for Enter/Space instead of the
+                // menu-navigation key handler.
+                onKeyDown={onClick ? null : handleKeyDown}
                 data-menu-item
                 className={classNames(
                     stylesAccountMenu.userInfo,
@@ -70,7 +74,7 @@ const AccountMenu = ({
                     {[stylesMenuBar.active]: isExpanded()}
                 )}
                 aria-label={intl.formatMessage(accountMenu)}
-                aria-expanded={isExpanded()}
+                aria-expanded={onClick ? null : isExpanded()}
             >
                 {avatarUrl ? (
                     <UserAvatar

@@ -190,14 +190,21 @@ const GUIComponent = props => {
         onShare,
         onShowPrivacyPolicy,
         onStartSelectingFileUpload,
+        onBeforeHelp,
         onBeforeNewProject,
+        onBeforeSaveToComputer,
         onTelemetryModalCancel,
         onTelemetryModalOptIn,
         onTelemetryModalOptOut,
         onUpdateProjectThumbnail,
         showComingSoon,
         showDebugButton,
+        showLoadButton,
+        showLogo,
+        showNewButton,
+        showSaveButton,
         showTutorialsButton,
+        showTurboModeButton,
         showNewFeatureCallouts,
         soundsTabVisible,
         stageSizeMode,
@@ -261,6 +268,7 @@ const GUIComponent = props => {
 
     return (<MediaQuery minWidth={layout.fullSizeMinWidth}>{isFullSize => {
         const stageSize = resolveStageSize(stageSizeMode, isFullSize);
+        const blocksMedia = `${basePath}static/${colorModeMap[colorMode].blocksMediaFolder}/`;
         const boxStyles = classNames(styles.bodyWrapper, {
             [styles.bodyWrapperWithoutMenuBar]: menuBarHidden
         });
@@ -370,7 +378,12 @@ const GUIComponent = props => {
                             renderLogin={renderLogin}
                             showComingSoon={showComingSoon}
                             showDebugButton={showDebugButton}
+                            showLoadButton={showLoadButton}
+                            showLogo={showLogo}
+                            showNewButton={showNewButton}
+                            showSaveButton={showSaveButton}
                             showTutorialsButton={showTutorialsButton}
+                            showTurboModeButton={showTurboModeButton}
                             onClickAbout={onClickAbout}
                             onClickLogo={onClickLogo}
                             onLogOut={onLogOut}
@@ -380,7 +393,9 @@ const GUIComponent = props => {
                             onSeeCommunity={onSeeCommunity}
                             onShare={onShare}
                             onStartSelectingFileUpload={onStartSelectingFileUpload}
+                            onBeforeHelp={onBeforeHelp}
                             onBeforeNewProject={onBeforeNewProject}
+                            onBeforeSaveToComputer={onBeforeSaveToComputer}
                             onToggleLoginOpen={onToggleLoginOpen}
                             userOwnsProject={userOwnsProject}
                             username={username}
@@ -496,7 +511,7 @@ const GUIComponent = props => {
                                             grow={1}
                                             isVisible={blocksTabVisible}
                                             options={{
-                                                media: `${basePath}static/${colorModeMap[colorMode].blocksMediaFolder}/`,
+                                                media: blocksMedia,
                                                 ...blocksOptions
                                             }}
                                             blocksHideConfig={blocksHideConfig}
@@ -673,7 +688,9 @@ GUIComponent.propTypes = {
     onShare: PropTypes.func,
     onShowPrivacyPolicy: PropTypes.func,
     onStartSelectingFileUpload: PropTypes.func,
+    onBeforeHelp: PropTypes.func,
     onBeforeNewProject: PropTypes.func,
+    onBeforeSaveToComputer: PropTypes.func,
     onTabSelect: PropTypes.func,
     onTelemetryModalCancel: PropTypes.func,
     onTelemetryModalOptIn: PropTypes.func,
@@ -685,7 +702,12 @@ GUIComponent.propTypes = {
     setTheme: PropTypes.func.isRequired,
     showComingSoon: PropTypes.bool,
     showDebugButton: PropTypes.bool,
+    showLoadButton: PropTypes.bool,
+    showLogo: PropTypes.bool,
+    showNewButton: PropTypes.bool,
+    showSaveButton: PropTypes.bool,
     showTutorialsButton: PropTypes.bool,
+    showTurboModeButton: PropTypes.bool,
     showNewFeatureCallouts: PropTypes.bool,
     soundsTabVisible: PropTypes.bool,
     stageSizeMode: PropTypes.oneOf(Object.keys(STAGE_SIZE_MODES)),

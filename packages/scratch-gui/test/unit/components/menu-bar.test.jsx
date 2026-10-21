@@ -2,6 +2,7 @@ import React from 'react';
 import {renderWithIntl} from '../../helpers/intl-helpers.jsx';
 import MenuBar from '../../../src/components/menu-bar/menu-bar';
 import {menuInitialState} from '../../../src/reducers/menus';
+import {openTipsLibrary} from '../../../src/reducers/modals';
 import {LoadingState} from '../../../src/reducers/project-state';
 import {DEFAULT_MODE} from '../../../src/lib/settings/color-mode';
 import {fireEvent} from '@testing-library/react';
@@ -29,6 +30,9 @@ describe('MenuBar Component', () => {
             },
             timeTravel: {
                 year: 'NOW'
+            },
+            restoreDeletion: {
+                deletedItem: null
             },
             vm: new VM(),
             platform: {
@@ -110,6 +114,87 @@ describe('MenuBar Component', () => {
 
             expect(onBeforeNewProject).toHaveBeenCalledTimes(1);
             expect(store.getActions().length).toBe(actionCount);
+        });
+    });
+
+    describe('menu visibility', () => {
+        test('hides the New item when showNewButton is false', () => {
+            const onClickNew = jest.fn();
+            const {getByLabelText, queryByText} = renderWithIntl(getComponent({
+                canManageFiles: true,
+                onClickNew,
+                showNewButton: false
+            }));
+
+            fireEvent.click(getByLabelText('File menu'));
+            expect(queryByText('New')).toBeNull();
+            expect(onClickNew).not.toHaveBeenCalled();
+        });
+
+        test('hides loading and saving when those file buttons are disabled', () => {
+            const {getByLabelText, queryByText} = renderWithIntl(getComponent({
+                canManageFiles: true,
+                showLoadButton: false,
+                showSaveButton: false
+            }));
+
+            fireEvent.click(getByLabelText('File menu'));
+            expect(queryByText('Load from computer')).toBeNull();
+            expect(queryByText('Save to your computer')).toBeNull();
+        });
+
+        test('hides the turbo mode item when showTurboModeButton is false', () => {
+            const {getByLabelText, queryByText} = renderWithIntl(getComponent({
+                showTurboModeButton: false
+            }));
+
+            fireEvent.click(getByLabelText('Edit menu'));
+            expect(queryByText('Turn on Turbo Mode')).toBeNull();
+            expect(queryByText('Turn off Turbo Mode')).toBeNull();
+        });
+
+        test('hides the logo when showLogo is false', () => {
+            const {container} = renderWithIntl(getComponent({showLogo: false}));
+            expect(container.querySelector('#logo_img')).toBeNull();
+        });
+    });
+
+    describe('tutorials hook', () => {
+        test('does not open the tutorial library when onBeforeHelp returns false', () => {
+            const onBeforeHelp = jest.fn(() => false);
+            const actionCount = store.getActions().length;
+            const {getByLabelText} = renderWithIntl(getComponent({onBeforeHelp}));
+
+            fireEvent.click(getByLabelText('Tutorials'));
+            expect(onBeforeHelp).toHaveBeenCalledTimes(1);
+            expect(store.getActions().slice(actionCount)).not.toContainEqual(openTipsLibrary());
+        });
+
+        test('opens the tutorial library when onBeforeHelp allows it', () => {
+            const onBeforeHelp = jest.fn(() => true);
+            const actionCount = store.getActions().length;
+            const {getByLabelText} = renderWithIntl(getComponent({onBeforeHelp}));
+
+            fireEvent.click(getByLabelText('Tutorials'));
+            expect(onBeforeHelp).toHaveBeenCalledTimes(1);
+            expect(store.getActions().slice(actionCount)).toContainEqual(openTipsLibrary());
+        });
+    });
+
+    describe('account menu', () => {
+        test('uses the avatar click override instead of opening the menu', () => {
+            const onClick = jest.fn();
+            const {getByLabelText} = renderWithIntl(getComponent({
+                accountMenuOptions: {
+                    canHaveSession: true,
+                    avatarUrl: '//cdn/avatar.png',
+                    onClick
+                },
+                username: 'student'
+            }));
+
+            fireEvent.click(getByLabelText('Account menu'));
+            expect(onClick).toHaveBeenCalledTimes(1);
         });
     });
 });

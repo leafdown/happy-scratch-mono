@@ -159,6 +159,7 @@ class MenuBar extends React.Component {
         super(props);
         bindAll(this, [
             'handleClickNew',
+            'handleClickHelp',
             'handleClickSeeCommunity',
             'handleClickShare',
             'handleSetMode',
@@ -190,6 +191,13 @@ class MenuBar extends React.Component {
             this.props.onClickNew(this.props.canSave && this.props.canCreateNew);
         }
     }
+    handleClickHelp () {
+        if (this.props.onBeforeHelp && this.props.onBeforeHelp() === false) {
+            return;
+        }
+        this.props.onOpenTipLibrary();
+    }
+
     handleClickSeeCommunity (waitForUpdate) {
         if (this.props.shouldSaveBeforeTransition()) {
             this.props.autoUpdateProject(); // save before transitioning to project page
@@ -228,17 +236,20 @@ class MenuBar extends React.Component {
                 document.documentElement.style.height = '';
             }
 
-            // Change logo for modes
-            if (mode === '1990') {
-                document.getElementById('logo_img').src = ninetiesLogo;
-            } else if (mode === '2020') {
-                document.getElementById('logo_img').src = catLogo;
-            } else if (mode === '1920') {
-                document.getElementById('logo_img').src = oldtimeyLogo;
-            } else if (mode === '220022BC') {
-                document.getElementById('logo_img').src = prehistoricLogo;
-            } else {
-                document.getElementById('logo_img').src = getScratchLogo(this.props.platform);
+            // Change logo for modes (the logo may be hidden via showLogo=false)
+            const logoElement = document.getElementById('logo_img');
+            if (logoElement) {
+                if (mode === '1990') {
+                    logoElement.src = ninetiesLogo;
+                } else if (mode === '2020') {
+                    logoElement.src = catLogo;
+                } else if (mode === '1920') {
+                    logoElement.src = oldtimeyLogo;
+                } else if (mode === '220022BC') {
+                    logoElement.src = prehistoricLogo;
+                } else {
+                    logoElement.src = getScratchLogo(this.props.platform);
+                }
             }
 
             this.props.onSetTimeTravelMode(mode);
@@ -258,6 +269,9 @@ class MenuBar extends React.Component {
     }
     getSaveToComputerHandler (downloadProjectCallback) {
         return () => {
+            if (this.props.onBeforeSaveToComputer && this.props.onBeforeSaveToComputer() === false) {
+                return;
+            }
             downloadProjectCallback();
             if (this.props.onProjectTelemetryEvent) {
                 const metadata = collectMetadata(this.props.vm, this.props.projectTitle, this.props.locale);
@@ -331,21 +345,23 @@ class MenuBar extends React.Component {
             >
                 <div className={styles.mainMenu}>
                     <div className={styles.fileGroup}>
-                        <button
-                            aria-label={this.props.intl.formatMessage(ariaMessages.home)}
-                            className={classNames(styles.menuBarItem)}
-                            onClick={this.props.onClickLogo}
-                        >
-                            <img
-                                id="logo_img"
-                                alt="Scratch"
-                                className={classNames(styles.scratchLogo, {
-                                    [styles.clickable]: typeof this.props.onClickLogo !== 'undefined'
-                                })}
-                                draggable={false}
-                                src={this.props.logo || getScratchLogo(this.props.platform)}
-                            />
-                        </button>
+                        {this.props.showLogo !== false && (
+                            <button
+                                aria-label={this.props.intl.formatMessage(ariaMessages.home)}
+                                className={classNames(styles.menuBarItem)}
+                                onClick={this.props.onClickLogo}
+                            >
+                                <img
+                                    id="logo_img"
+                                    alt="Scratch"
+                                    className={classNames(styles.scratchLogo, {
+                                        [styles.clickable]: typeof this.props.onClickLogo !== 'undefined'
+                                    })}
+                                    draggable={false}
+                                    src={this.props.logo || getScratchLogo(this.props.platform)}
+                                />
+                            </button>
+                        )}
                         {(this.props.canChangeColorMode || this.props.canChangeLanguage || this.props.canChangeTheme) &&
                         (<SettingsMenu
                             canChangeLanguage={this.props.canChangeLanguage}
@@ -367,12 +383,16 @@ class MenuBar extends React.Component {
                             intl={this.props.intl}
                             isRtl={this.props.isRtl}
                             remixMessage={remixMessage}
+                            showNewButton={this.props.showNewButton}
+                            showLoadButton={this.props.showLoadButton}
+                            showSaveButton={this.props.showSaveButton}
                             depth={1}
                         />)}
                         <EditMenu
                             isRtl={this.props.isRtl}
                             onRestoreOption={this.handleRestoreOption}
                             restoreOptionMessage={this.restoreOptionMessage}
+                            showTurboModeButton={this.props.showTurboModeButton}
                             depth={1}
                         />
                         {this.props.isTotallyNormal && (<ModeMenu
@@ -479,36 +499,39 @@ class MenuBar extends React.Component {
                     ))}
                     <div className={styles.fileGroup}>
                         {this.props.showTutorialsButton !== false && (
-                        <button
-                            aria-label={this.props.intl.formatMessage(ariaMessages.tutorials)}
-                            className={
-                                classNames(styles.menuBarItem, styles.noOffset, styles.hoverable, 'tutorials-button')
-                            }
-                            onClick={this.props.onOpenTipLibrary}
-                        >
-                            <img
-                                className={styles.helpIcon}
-                                src={helpIcon}
-                            />
-                            <span className={styles.tutorialsLabel}>
-                                <FormattedMessage {...ariaMessages.tutorials} />
-                            </span>
-                        </button>
+                            <button
+                                aria-label={this.props.intl.formatMessage(ariaMessages.tutorials)}
+                                className={classNames(
+                                    styles.menuBarItem,
+                                    styles.noOffset,
+                                    styles.hoverable,
+                                    'tutorials-button'
+                                )}
+                                onClick={this.handleClickHelp}
+                            >
+                                <img
+                                    className={styles.helpIcon}
+                                    src={helpIcon}
+                                />
+                                <span className={styles.tutorialsLabel}>
+                                    <FormattedMessage {...ariaMessages.tutorials} />
+                                </span>
+                            </button>
                         )}
                         {this.props.showDebugButton !== false && (
-                        <button
-                            aria-label={this.props.intl.formatMessage(ariaMessages.debug)}
-                            className={classNames(styles.menuBarItem, styles.noOffset, styles.hoverable)}
-                            onClick={this.props.onOpenDebugModal}
-                        >
-                            <img
-                                className={styles.helpIcon}
-                                src={debugIcon}
-                            />
-                            <span className={styles.debugLabel}>
-                                <FormattedMessage {...ariaMessages.debug} />
-                            </span>
-                        </button>
+                            <button
+                                aria-label={this.props.intl.formatMessage(ariaMessages.debug)}
+                                className={classNames(styles.menuBarItem, styles.noOffset, styles.hoverable)}
+                                onClick={this.props.onOpenDebugModal}
+                            >
+                                <img
+                                    className={styles.helpIcon}
+                                    src={debugIcon}
+                                />
+                                <span className={styles.debugLabel}>
+                                    <FormattedMessage {...ariaMessages.debug} />
+                                </span>
+                            </button>
                         )}
                     </div>
                 </div>
@@ -717,7 +740,9 @@ MenuBar.propTypes = {
             })
         )
     ]),
+    onBeforeHelp: PropTypes.func,
     onBeforeNewProject: PropTypes.func,
+    onBeforeSaveToComputer: PropTypes.func,
     onClickLogin: PropTypes.func,
     onClickLogo: PropTypes.func,
     onClickMode: PropTypes.func,
@@ -742,7 +767,12 @@ MenuBar.propTypes = {
     shouldSaveBeforeTransition: PropTypes.func,
     showComingSoon: PropTypes.bool,
     showDebugButton: PropTypes.bool,
+    showLoadButton: PropTypes.bool,
+    showLogo: PropTypes.bool,
+    showNewButton: PropTypes.bool,
+    showSaveButton: PropTypes.bool,
     showTutorialsButton: PropTypes.bool,
+    showTurboModeButton: PropTypes.bool,
     username: PropTypes.string,
     avatarBadge: PropTypes.number,
     userOwnsProject: PropTypes.bool,

@@ -30,16 +30,17 @@ To ease upstream syncs (see `scripts/upgrade-from-upstream.sh`), all patches are
 | P14 | `lib/cloud-manager-hoc.jsx` | Optional `cloudControl` override for projectId/username/enable/write, and reconnect on stale connection |
 | P15 | `components/gui/gui.jsx` + `components/menu-bar/menu-bar.jsx` | Optional `onBeforeNewProject` hook, called after confirmation |
 | P16 | `lib/sb-file-uploader-hoc.jsx` | Optional `onBeforeProjectUpload` / `onAfterProjectUpload` / `onProjectUploadFailed` hooks around a local project load |
+| P17 | `components/menu-bar/file-menu.jsx` | New/Load/Save menu item visibility (`showNewButton` / `showLoadButton` / `showSaveButton`) |
+| P18 | `components/menu-bar/edit-menu.jsx` | Turbo mode menu item visibility (`showTurboModeButton`) |
+| P19 | `components/menu-bar/menu-bar.jsx` | Logo visibility (`showLogo`), help `onBeforeHelp` hook, save-to-computer `onBeforeSaveToComputer` hook |
+| P20 | `components/menu-bar/account-menu.jsx` + `lib/account-menu-options.ts` | Avatar click override (`accountMenuOptions.onClick`) |
 | — | `components/stage-wrapper/stage-wrapper.jsx` | Forward `stageHeaderConfig`/`controlsConfig` |
 
 ## Not applied (deferred / optional)
-| ID | File | Customization | Reason |
-|----|------|---------------|--------|
-| P8 | `components/menu-bar/file-menu.jsx` | New/Save/Load buttons visibility + before hooks | FileMenu is a dropdown; easy-scratch3's standalone buttons don't map cleanly. Use `canManageFiles` (native) for whole-menu control. |
-| — | `components/menu-bar/edit-menu.jsx` | Turbo mode visibility | Native `canChangeColorMode`-style prop not available; low priority |
+None currently.
 
 ## Known limitations
-- `hideCatagorys`/`hideBlocks` take effect when blocks.jsx regenerates the toolbox (on target switch / project load). The initial toolbox (from `makeToolboxXML(true)` in reducers/toolbox.js) has no hideConfig. Hosts can force a refresh via `window.vm.emitWorkspaceUpdate()` once the VM is ready.
+- `hideCatagorys`/`hideBlocks` only affect the toolbox after `blocks.jsx` regenerates it. The wrapper subscribes to the VM's `PROJECT_LOADED` event and calls `vm.emitWorkspaceUpdate()` when either list is non-empty, so the configuration applies once the project boots (and after every subsequent load).
 
 ## Upgrade procedure
 1. `git fetch upstream --tags && git rebase v15.2.0` (use the latest upstream release tag)

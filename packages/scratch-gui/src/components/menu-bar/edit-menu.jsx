@@ -23,6 +23,7 @@ const EditMenu = ({
     isRtl,
     onRestoreOption,
     restoreOptionMessage,
+    showTurboModeButton,
     depth
 }) => {
     const intl = useIntl();
@@ -76,29 +77,31 @@ const EditMenu = ({
                         {restoreOptionMessage(deletedItem)}
                     </MenuItem>
                 )}</DeletionRestorer>
-                <MenuSection>
-                    <TurboMode>{(toggleTurboMode, {turboMode}) => (
-                        <MenuItem
-                            onClick={toggleTurboMode}
-                            isDataMenuItem
-                            onParentKeyDown={handleKeyDownOpenMenu}
-                        >
-                            {turboMode ? (
-                                <FormattedMessage
-                                    defaultMessage="Turn off Turbo Mode"
-                                    description="Menu bar item for turning off turbo mode"
-                                    id="gui.menuBar.turboModeOff"
-                                />
-                            ) : (
-                                <FormattedMessage
-                                    defaultMessage="Turn on Turbo Mode"
-                                    description="Menu bar item for turning on turbo mode"
-                                    id="gui.menuBar.turboModeOn"
-                                />
-                            )}
-                        </MenuItem>
-                    )}</TurboMode>
-                </MenuSection>
+                {showTurboModeButton !== false && (
+                    <MenuSection>
+                        <TurboMode>{(toggleTurboMode, {turboMode}) => (
+                            <MenuItem
+                                onClick={toggleTurboMode}
+                                isDataMenuItem
+                                onParentKeyDown={handleKeyDownOpenMenu}
+                            >
+                                {turboMode ? (
+                                    <FormattedMessage
+                                        defaultMessage="Turn off Turbo Mode"
+                                        description="Menu bar item for turning off turbo mode"
+                                        id="gui.menuBar.turboModeOff"
+                                    />
+                                ) : (
+                                    <FormattedMessage
+                                        defaultMessage="Turn on Turbo Mode"
+                                        description="Menu bar item for turning on turbo mode"
+                                        id="gui.menuBar.turboModeOn"
+                                    />
+                                )}
+                            </MenuItem>
+                        )}</TurboMode>
+                    </MenuSection>
+                )}
             </MenuBarMenu>
         </button>
     );
@@ -108,6 +111,7 @@ EditMenu.propTypes = {
     isRtl: PropTypes.bool,
     restoreOptionMessage: PropTypes.func.isRequired,
     onRestoreOption: PropTypes.func.isRequired,
+    showTurboModeButton: PropTypes.bool,
     depth: PropTypes.number
 };
 

@@ -62,7 +62,10 @@ const setCustomLayout = ({blocksScale, stageScale, stageWidth, stageHeight} = {}
         BLOCKS_DEFAULT_SCALE = blocksScale;
     }
     if (typeof stageScale === 'number') {
+        // largeConstrained is the narrow-viewport variant of large; hosts that
+        // compute a stage scale expect it in both states.
         STAGE_DISPLAY_SCALES[STAGE_DISPLAY_SIZES.large] = stageScale;
+        STAGE_DISPLAY_SCALES[STAGE_DISPLAY_SIZES.largeConstrained] = stageScale;
     }
     if (typeof stageWidth === 'number') {
         layoutConstants.standardStageWidth = stageWidth;
@@ -81,4 +84,3 @@ export {
     STAGE_SIZE_MODES,
     setCustomLayout
 };
-

@@ -820,8 +820,9 @@ const makeToolboxXML = function (isInitialSetup, isStage = true, targetId, categ
     // Remove <block type="xxx"> ... </block> for any type in hideBlocks.
     const filterBlocks = xml => {
         if (!xml || hideBlocks.length === 0) return xml;
-        return xml.replace(/<block type="([^"]+)"[^>]*>[\s\S]*?<\/block>/g, (match, type) =>
-            hideBlocks.includes(type) ? '' : match);
+        return xml.replace(/<block type="([^"]+)"[^>]*>[\s\S]*?<\/block>/g, (match, type) => (
+            hideBlocks.includes(type) ? '' : match
+        ));
     };
 
     costumeName = xmlEscape(costumeName);
