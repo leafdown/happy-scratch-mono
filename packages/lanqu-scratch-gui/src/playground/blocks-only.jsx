@@ -2,7 +2,7 @@
  * Playground entry: blocks-only mode (just the blocks editor + controls, no stage).
  * Uses isPlayerOnly=false but the host layout hides the stage wrapper via CSS.
  *
- * Note: v14's GUIComponent doesn't expose a native "blocks only" toggle, so this
+ * Note: scratch-gui's GUIComponent doesn't expose a native "blocks only" toggle, so this
  * mode renders the full editor; hosts that want a true blocks-only view should
  * apply CSS to hide the stage/target pane. This matches easy-scratch3's approach.
  */

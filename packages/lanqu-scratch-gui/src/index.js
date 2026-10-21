@@ -168,7 +168,7 @@ const buildPatchProps = (config, extraProps = {}) => {
     }
 
     // Account menu (native accountMenuOptions prop): user avatar + my stuff link.
-    // Maps scratchConfig.menuBar.userAvatar / myStuff to v14's AccountMenuOptions.
+    // Maps scratchConfig.menuBar.userAvatar / myStuff to scratch-gui's AccountMenuOptions.
     if (config.menuBar && (config.menuBar.userAvatar || config.menuBar.myStuff)) {
         const ua = config.menuBar.userAvatar || {};
         const ms = config.menuBar.myStuff || {};

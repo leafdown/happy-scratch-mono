@@ -1,6 +1,6 @@
 /**
- * Lanqu backpack storage — adapts the Lanqu backpack protocol to scratch-gui
- * v14's GUIBackpackStorage interface (list / save / delete / setSession).
+ * Lanqu backpack storage — adapts the Lanqu backpack protocol to scratch-gui's
+ * GUIBackpackStorage interface (list / save / delete / setSession).
  *
  * Two backends:
  *   - HTTP:   Lanqu backpack api (X-Access-Token auth, /content /save /delete paths)
@@ -21,12 +21,12 @@ const randomId = () => {
     return str;
 };
 
-// v14 BackpackItem requires thumbnailUrl/bodyUrl. The Lanqu backend returns
+// scratch-gui's BackpackItem requires thumbnailUrl/bodyUrl. The Lanqu backend returns
 // thumbnail/body as URLs (protocol-relative or absolute), not base64 — so build
 // the display URL directly rather than wrapping in a data: URL.
 const isDataOrUrl = s => /^(data:|https?:|\/\/)/.test(s);
 // Local-dev: route storage.lanqu.vip through /storage-cdn/ proxy (vue dev server)
-// so v14's handleDrop fetch of bodyUrl doesn't hit CORS. No-op in production.
+// so scratch-gui's handleDrop fetch of bodyUrl doesn't hit CORS. No-op in production.
 const proxyStorageUrl = url => {
     if (typeof url !== 'string') return url;
     if (/^https?:\/\/(localhost|127\.0\.0\.1)/.test(location.href) &&
@@ -62,7 +62,7 @@ class LanquBackpackStorage {
     }
 
     setSession (session) {
-        // v14's Backpack container calls setSession(null) when redux has no session
+        // scratch-gui's Backpack container calls setSession(null) when redux has no session
         // (we don't populate redux session state — the Lanqu token lives in
         // scratchConfig). Fall back to the config session so list/save carry the
         // X-Access-Token from scratchConfig.session.token.
@@ -146,7 +146,7 @@ class LanquBackpackStorage {
                     return reject(new Error(String(response && response.statusCode)));
                 }
                 // Merge so the returned BackpackItem always has the standard
-                // type/name fields the v14 UI needs (backend may omit them).
+                // type/name fields the scratch-gui UI needs (backend may omit them).
                 const saved = response.body || {};
                 resolve(withFullUrls({...entry, ...saved, type: entry.type, name: saved.name || entry.name}));
             });

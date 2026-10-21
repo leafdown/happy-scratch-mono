@@ -1,16 +1,16 @@
 /**
  * Lanqu cloud variable provider — adapts the Lanqu WebSocket cloud protocol to
- * scratch-gui v14's GUICloudVariableProvider interface.
+ * scratch-gui's GUICloudVariableProvider interface.
  *
- * Protocol (compatible with v14 message methods, differs in auth):
- *   - v14 auth:   WebSocket subprotocol `bearer!${token}`
- *   - Lanqu auth: token/user/project_id carried in the message body
+ * Protocol (compatible with scratch-gui message methods, differs in auth):
+ *   - Official auth: WebSocket subprotocol `bearer!${token}`
+ *   - Lanqu auth:    token/user/project_id carried in the message body
  *
  * Message methods: handshake / create / set / rename / delete
  *
- * This is a port of easy-scratch3/src/lib/cloud-provider.js, adapted to the v14
- * interface (adds isConnectedOrConnecting). The protocol is exercised against a
- * local mock WebSocket server; deploy-time Redis verification is still required.
+ * This is a port of easy-scratch3/src/lib/cloud-provider.js, adapted to the
+ * scratch-gui interface (adds isConnectedOrConnecting). The protocol is exercised
+ * against a local mock WebSocket server; deploy-time Redis verification is still required.
  */
 import throttle from 'lodash.throttle';
 
@@ -34,7 +34,7 @@ class LanquCloudProvider {
         this.connection = null;
         this._connectionTimeout = null;
 
-        // Rate limit to 10 messages/sec, matching v14.
+        // Rate limit to 10 messages/sec, matching scratch-gui.
         this.sendCloudData = throttle(this._sendCloudData, 100);
 
         this.openConnection();
