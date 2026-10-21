@@ -24,6 +24,51 @@ const getCloudProjectId = config => {
     return projectId === defaultProjectId ? '' : projectId;
 };
 
+// An unsaved work gets its own cloud bucket. The session id is chosen by the
+// browser and combined with the account name on the server, so two drafts of
+// the same user never share variables. It is kept in localStorage so a reload
+// of the same unsaved work keeps its values, while "new project" rotates it.
+const DRAFT_SESSION_STORAGE_KEY = 'lanqu_scratch_draft_session';
+
+const createDraftSession = () => {
+    try {
+        if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+            const bytes = new Uint8Array(8);
+            window.crypto.getRandomValues(bytes);
+            let session = '';
+            for (let i = 0; i < bytes.length; i++) {
+                session += ('0' + bytes[i].toString(16)).slice(-2);
+            }
+            return session;
+        }
+    } catch (e) {
+        // fall through to the non-crypto fallback
+    }
+    return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+};
+
+const readDraftSession = key => {
+    try {
+        return window.localStorage.getItem(key) || '';
+    } catch (e) {
+        return '';
+    }
+};
+
+const writeDraftSession = (key, value) => {
+    try {
+        window.localStorage.setItem(key, value);
+    } catch (e) {
+        // Storage may be unavailable (private mode, sandboxed iframe).
+    }
+};
+
+const isDraftProjectId = projectId => (
+    projectId === 'create' ||
+    projectId.indexOf('create:') === 0 ||
+    projectId.indexOf('draft:') === 0
+);
+
 const getCloudUsername = config => (
     (config.projectInfo && config.projectInfo.authorUsername) ||
     (config.session && config.session.username) ||
@@ -38,18 +83,43 @@ const canWriteCloud = config => {
     return !!(token && String(token).trim());
 };
 
+/**
+ * Stable identity for a library asset. push*Library is a merge, so the same
+ * asset pushed twice (for example on a retry or a second remote call) must not
+ * appear twice in the drawer.
+ */
+const getAssetKey = asset => {
+    if (!asset) return '';
+    return asset.id || asset.assetId || `${asset.name || ''}|${asset.md5ext || ''}`;
+};
+
+const dedupeAssets = assets => {
+    const seen = new Set();
+    const result = [];
+    for (const asset of assets) {
+        const key = getAssetKey(asset);
+        if (key && seen.has(key)) continue;
+        if (key) seen.add(key);
+        result.push(asset);
+    }
+    return result;
+};
+
 const scratchApiHOC = (config, store) => WrappedComponent => {
     class ScratchApiWrapper extends React.Component {
         constructor (props) {
             super(props);
             this.vm = null;
+            this.draftSessionKey = `${DRAFT_SESSION_STORAGE_KEY}:${getCloudUsername(config)}`;
+            this.draftSession = readDraftSession(this.draftSessionKey) || createDraftSession();
+            writeDraftSession(this.draftSessionKey, this.draftSession);
             this.state = {
                 cloudEnabled: isCloudEnabled(config),
-                cloudProjectId: getCloudProjectId(config),
+                cloudProjectId: this.resolveCloudProjectId(getCloudProjectId(config)),
                 cloudUsername: getCloudUsername(config),
                 cloudWritable: canWriteCloud(config)
             };
-            bindAll(this, ['handleVmInit']);
+            bindAll(this, ['handleVmInit', 'handleProjectLoaded']);
         }
 
         componentDidMount () {
@@ -67,21 +137,59 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
         handleVmInit (vm) {
             this.vm = vm;
             window.vm = vm;
-            // hideCatagorys/hideBlocks take effect when blocks.jsx regenerates
-            // the toolbox (on target switch / project load). Hosts can force a
-            // refresh via window.vm.emitWorkspaceUpdate() once the VM is ready.
             this.registerVmApi();
-            // Fire handleDefaultProjectLoaded once the first project (the default
-            // one) finishes loading — easy-scratch3 uses this hook to load a
-            // workId/workFile project over the default.
-            if (config.handleDefaultProjectLoaded && vm.runtime) {
-                const onFirstLoad = () => {
-                    vm.runtime.off('PROJECT_LOADED', onFirstLoad);
-                    try { config.handleDefaultProjectLoaded(); } catch (e) { console.error(e); } // eslint-disable-line no-console
-                };
-                vm.runtime.on('PROJECT_LOADED', onFirstLoad);
+            if (vm.runtime) {
+                // PROJECT_LOADED fires for every project load, including direct
+                // window.scratch.loadProject() calls (which do not update the
+                // GUI's redux project state).
+                vm.runtime.on('PROJECT_LOADED', this.handleProjectLoaded);
+                // Fire handleDefaultProjectLoaded once the first project (the
+                // default one) finishes loading — easy-scratch3 uses this hook
+                // to load a workId/workFile project over the default.
+                if (config.handleDefaultProjectLoaded) {
+                    const onFirstLoad = () => {
+                        vm.runtime.off('PROJECT_LOADED', onFirstLoad);
+                        try { config.handleDefaultProjectLoaded(); } catch (e) { console.error(e); } // eslint-disable-line no-console
+                    };
+                    vm.runtime.on('PROJECT_LOADED', onFirstLoad);
+                }
             }
             if (config.handleVmInitialized) config.handleVmInitialized(vm);
+        }
+
+        handleProjectLoaded () {
+            const hiddenCategories = (config.blocks && config.blocks.hideCatagorys) || [];
+            const hiddenBlocks = (config.blocks && config.blocks.hideBlocks) || [];
+            // The initial toolbox is built before this config is known. Ask
+            // blocks.jsx to regenerate it so hidden categories/blocks apply
+            // without the host calling vm.emitWorkspaceUpdate() manually.
+            if (this.vm && (hiddenCategories.length || hiddenBlocks.length)) {
+                try {
+                    this.vm.emitWorkspaceUpdate();
+                } catch (e) {
+                    console.warn('failed to refresh toolbox with hide config', e); // eslint-disable-line no-console
+                }
+            }
+            if (config.projectInfo && config.projectInfo.projectName) {
+                this.setProjectTitle(config.projectInfo.projectName);
+            }
+            if (config.handleProjectLoaded) {
+                try { config.handleProjectLoaded(); } catch (e) { console.error(e); } // eslint-disable-line no-console
+            }
+        }
+
+        // "create" means "the work that is not saved yet". The server derives
+        // the bucket from the logged-in account, the session id only tells the
+        // server which of that account's drafts is meant.
+        resolveCloudProjectId (rawProjectId) {
+            if (rawProjectId === 'create') return `create:${this.draftSession}`;
+            return rawProjectId;
+        }
+
+        rotateDraftSession () {
+            this.draftSession = createDraftSession();
+            writeDraftSession(this.draftSessionKey, this.draftSession);
+            return this.draftSession;
         }
 
         registerApi () {
@@ -159,7 +267,14 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
                     proxied = url.replace(/^(https?:)?\/\/storage\.lanqu\.vip/, '/storage-cdn');
                 }
                 fetch(proxied)
-                    .then(r => r.blob())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(
+                                `failed to load project: HTTP ${response.status} ${response.statusText || ''}`.trim()
+                            );
+                        }
+                        return response.blob();
+                    })
                     .then(blob => {
                         const reader = new FileReader();
                         reader.onload = () => {
@@ -167,12 +282,15 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
                                 .then(() => callback && callback())
                                 .catch(e => callback && callback(e));
                         };
+                        reader.onerror = () => callback && callback(new Error('failed to read project file'));
                         reader.readAsArrayBuffer(blob);
                     })
                     .catch(e => callback && callback(e));
             };
             window.scratch.getProjectFile = callback => {
-                vm.saveProjectSb3().then(res => callback && callback(res));
+                vm.saveProjectSb3()
+                    .then(res => callback && callback(res))
+                    .catch(e => callback && callback(null, e));
             };
             window.scratch.getProjectCover = callback => {
                 vm.postIOData('video', {forceTransparentPreview: true});
@@ -190,17 +308,7 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
                 const state = store.getState();
                 return state.scratchGui?.projectTitle || state.scratchGui?.projectState?.projectId || '';
             };
-            window.scratch.setProjectName = name => {
-                // 标题输入框(ProjectTitleInput)绑定 redux state.scratchGui.projectTitle,
-                // 由 titled-hoc 初始化为本地化默认标题(zh-cn 下是"Scratch作品")。
-                // scratch-vm 没有 renameProject(旧实现调用它是静默 no-op,标题永远
-                // 停在默认值),这里直接派发 SET_PROJECT_TITLE 更新标题。action type
-                // 字符串定义在 @scratch/scratch-gui/src/reducers/project-title.js。
-                store.dispatch({
-                    type: 'projectTitle/SET_PROJECT_TITLE',
-                    title: name == null ? '' : String(name)
-                });
-            };
+            window.scratch.setProjectName = name => this.setProjectTitle(name);
             window.scratch.setEnableCouldData = enable => {
                 if (!config.cloudData) return;
                 config.cloudData.enable = !!enable;
@@ -210,12 +318,21 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
                 // Ignore empty / default project ids so a transient load cannot
                 // disconnect a live cloud session.
                 if (id == null || id === '') return;
-                const projectId = String(id);
+                let projectId = String(id);
                 if (projectId === defaultProjectId) return;
+                if (projectId === 'create') {
+                    // A new unsaved work must not reuse the previous draft's
+                    // bucket, otherwise it inherits its variables and values.
+                    this.rotateDraftSession();
+                    projectId = this.resolveCloudProjectId('create');
+                }
                 if (!config.cloudData) config.cloudData = {};
                 config.cloudData.id = projectId;
                 this.setState({cloudProjectId: projectId});
             };
+            // Lets a host restore the exact cloud project it had before, for
+            // example when loading a local project file failed.
+            window.scratch.getCloudId = () => this.state.cloudProjectId;
             window.scratch.setAuthorUsername = username => {
                 if (!config.projectInfo) return;
                 config.projectInfo.authorUsername = username == null ? '' : String(username);
@@ -236,16 +353,28 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
                 backdrops: current.backdrops || [],
                 sounds: current.sounds || []
             };
-            merged[type] = [...(merged[type] || []), ...data];
+            merged[type] = dedupeAssets([...(merged[type] || []), ...(data || [])]);
             store.dispatch({
                 type: 'scratch-gui/dynamic-assets/SET_DYNAMIC_ASSETS',
                 dynamicAssets: merged
             });
         }
 
+        setProjectTitle (name) {
+            // The title input (ProjectTitleInput) reads redux
+            // state.scratchGui.projectTitle, initialized by titled-hoc to a
+            // localized default. scratch-vm has no renameProject, so dispatch
+            // the reducer action directly; its type is defined in
+            // @scratch/scratch-gui/src/reducers/project-title.js.
+            store.dispatch({
+                type: 'projectTitle/SET_PROJECT_TITLE',
+                title: name == null ? '' : String(name)
+            });
+        }
+
         render () {
             const projectId = this.state.cloudProjectId;
-            const isDraft = projectId === 'create' || projectId.indexOf('draft:') === 0;
+            const isDraft = isDraftProjectId(projectId);
             const cloudControl = {
                 // Draft buckets are per-user and require login; anonymous players
                 // can still connect read-only to a saved work id.
@@ -272,5 +401,6 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
 };
 
 export {
+    dedupeAssets,
     scratchApiHOC
 };
