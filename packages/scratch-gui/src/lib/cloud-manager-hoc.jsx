@@ -14,6 +14,22 @@ import {
 } from '../reducers/alerts';
 import {GUIStoragePropType} from '../gui-config';
 
+const getCloudControl = props => props.cloudControl || {};
+
+const getCloudProjectId = props => {
+    const control = getCloudControl(props);
+    return Object.prototype.hasOwnProperty.call(control, 'projectId') ?
+        control.projectId : props.projectId;
+};
+
+const getCloudUsername = props => {
+    const control = getCloudControl(props);
+    return Object.prototype.hasOwnProperty.call(control, 'username') ?
+        control.username : props.username;
+};
+
+const isCloudEnabled = props => getCloudControl(props).enabled !== false;
+
 /*
  * Higher Order Component to manage the connection to the cloud server.
  * @param {React.Component} WrappedComponent component to manage VM events for
@@ -49,6 +65,11 @@ const cloudManagerHOC = function (WrappedComponent) {
 
             if (this.shouldDisconnect(this.props, prevProps)) {
                 this.disconnectFromCloud();
+                // A project/user change makes the existing connection stale.
+                // Reconnect immediately when the new props are still valid.
+                if (this.shouldConnect(this.props)) {
+                    this.connectToCloud();
+                }
             }
         }
         componentWillUnmount () {
@@ -58,28 +79,39 @@ const cloudManagerHOC = function (WrappedComponent) {
 
             this.disconnectFromCloud();
         }
-        canUseCloud (props) {
+        canConnectCloud (props) {
             return !!(
+                isCloudEnabled(props) &&
                 props.storage.cloudVariables &&
                 props.cloudHost &&
-                props.username &&
+                getCloudUsername(props) &&
                 props.vm &&
-                props.projectId &&
+                getCloudProjectId(props) &&
                 props.hasCloudPermission
             );
         }
+        canUseCloud (props) {
+            // Writing is a UI concern. Keep the connection alive for read-only
+            // sessions (for example an anonymous player).
+            const control = getCloudControl(props);
+            return this.canConnectCloud(props) && control.canWrite !== false;
+        }
         shouldConnect (props) {
-            return !this.isConnected() && this.canUseCloud(props) &&
-                props.isShowingWithId && props.vm.runtime.hasCloudData() &&
+            const control = getCloudControl(props);
+            // A host-managed project ID means the project is ready for cloud
+            // data even if the redux project state still says "without id".
+            const projectReady = control.projectId ? true : props.isShowingWithId;
+            return !this.isConnected() && this.canConnectCloud(props) &&
+                projectReady && props.vm.runtime.hasCloudData() &&
                 props.canModifyCloudData;
         }
         shouldDisconnect (props, prevProps) {
             return this.isConnected() &&
                 ( // Can no longer use cloud or cloud provider info is now stale
-                    !this.canUseCloud(props) ||
+                    !this.canConnectCloud(props) ||
                     !props.vm.runtime.hasCloudData() ||
-                    (props.projectId !== prevProps.projectId) ||
-                    (props.username !== prevProps.username) ||
+                    (getCloudProjectId(props) !== getCloudProjectId(prevProps)) ||
+                    (getCloudUsername(props) !== getCloudUsername(prevProps)) ||
                     // Editing someone else's project
                     !props.canModifyCloudData
                 );
@@ -98,8 +130,8 @@ const cloudManagerHOC = function (WrappedComponent) {
             this.cloudProvider = this.props.storage.cloudVariables.createProvider(
                 this.props.cloudHost,
                 this.props.vm,
-                this.props.username,
-                this.props.projectId
+                getCloudUsername(this.props),
+                getCloudProjectId(this.props)
             );
 
             this.props.vm.setCloudProvider(this.cloudProvider);
@@ -134,6 +166,7 @@ const cloudManagerHOC = function (WrappedComponent) {
             const {
 
                 canModifyCloudData,
+                cloudControl,
                 cloudHost,
                 projectId,
                 hasCloudPermission,
@@ -161,6 +194,13 @@ const cloudManagerHOC = function (WrappedComponent) {
     CloudManager.propTypes = {
         storage: GUIStoragePropType,
         canModifyCloudData: PropTypes.bool.isRequired,
+        cloudControl: PropTypes.shape({
+            enabled: PropTypes.bool,
+            projectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+            username: PropTypes.string,
+            canModifyCloudData: PropTypes.bool,
+            canWrite: PropTypes.bool
+        }),
         cloudHost: PropTypes.string,
         hasCloudPermission: PropTypes.bool,
         isShowingWithId: PropTypes.bool.isRequired,
@@ -179,6 +219,11 @@ const cloudManagerHOC = function (WrappedComponent) {
 
     const mapStateToProps = (state, ownProps) => {
         const loadingState = state.scratchGui.projectState.loadingState;
+        const cloudControl = ownProps.cloudControl || {};
+        const canModifyCloudData = Object.prototype.hasOwnProperty.call(
+            cloudControl, 'canModifyCloudData'
+        ) ? cloudControl.canModifyCloudData : (!state.scratchGui.mode.hasEverEnteredEditor ||
+            ownProps.canSave);
         return {
             storage: state.scratchGui.config.storage,
 
@@ -186,8 +231,7 @@ const cloudManagerHOC = function (WrappedComponent) {
             projectId: state.scratchGui.projectState.projectId,
             // if you're editing someone else's project, you can't modify cloud data
             canModifyCloudData:
-                (!state.scratchGui.mode.hasEverEnteredEditor ||
-                    ownProps.canSave) &&
+                canModifyCloudData &&
                 // possible security concern if the program attempts to encode webcam data over cloud variables
                 !(
                     ownProps.vm.extensionManager.isExtensionLoaded(

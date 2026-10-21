@@ -168,8 +168,10 @@ const buildPatchProps = (config, extraProps = {}) => {
         }
     }
 
-    // Cloud host (native prop, consumed by cloudManagerHOC)
-    if (config.cloudData && config.cloudData.enable && config.cloudData.api) {
+    // Cloud host (native prop, consumed by cloudManagerHOC). Keep these wired
+    // even when cloud data starts disabled so setEnableCouldData(true) can
+    // establish a connection at runtime.
+    if (config.cloudData && config.cloudData.api) {
         props.cloudHost = config.cloudData.api;
         props.hasCloudPermission = true;
     }

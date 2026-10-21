@@ -75,8 +75,11 @@
       },
       cloudData:{
         enable: true,
-        id: "create", //云变量ID，提交作业后使用window.scratch.setCloudId换成作品ID
-        api: window.location.hostname +"/api/websocket/scratch/cloudData" //云变量API地址
+        // 已保存作品直接用作品ID；新作品先用 "create"，后端会按登录用户
+        // 规范化为 draft:<username>，避免所有学生共用同一个云变量空间。
+        // 提交成功后宿主会调用 window.scratch.setCloudId(workId) 切到正式作品。
+        id: workId || "create",
+        api: window.location.host + "/api/websocket/scratch/cloudData" //云变量API地址(host 含端口)
       },
       projectInfo: {//作品信息
         projectName: "",

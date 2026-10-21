@@ -9,8 +9,8 @@
  * Message methods: handshake / create / set / rename / delete
  *
  * This is a port of easy-scratch3/src/lib/cloud-provider.js, adapted to the v14
- * interface (adds isConnectedOrConnecting). Real backend verification is deferred
- * to stage 2; the structure is complete but untested against the live server.
+ * interface (adds isConnectedOrConnecting). The protocol is exercised against a
+ * local mock WebSocket server; deploy-time Redis verification is still required.
  */
 import throttle from 'lodash.throttle';
 
@@ -47,9 +47,10 @@ class LanquCloudProvider {
     openConnection () {
         this.connectionAttempts += 1;
         try {
-            this.connection = new WebSocket(
-                (location.protocol === 'http:' ? 'ws://' : 'wss://') + this.cloudHost
-            );
+            const host = /^wss?:\/\//i.test(this.cloudHost) ?
+                this.cloudHost :
+                (location.protocol === 'https:' ? 'wss://' : 'ws://') + this.cloudHost;
+            this.connection = new WebSocket(host);
         } catch (e) {
             log.warn('Websocket support is not available in this browser', e);
             this.isTryingToConnect = false;
@@ -63,16 +64,25 @@ class LanquCloudProvider {
     }
 
     onError (event) {
-        log.error(`Websocket connection error: ${JSON.stringify(event)}`);
+        log.error('Websocket connection error', event);
     }
 
     onMessage (event) {
         const messageString = event.data;
         messageString.split('\n').forEach(message => {
-            if (message) {
-                const parsedData = this.parseMessage(JSON.parse(message));
-                if (this.vm) this.vm.postIOData('cloud', parsedData);
+            if (!message) return;
+            let parsed;
+            try {
+                parsed = JSON.parse(message);
+            } catch (e) {
+                log.error('Could not parse cloud message', message, e);
+                return;
             }
+            if (parsed.method === 'ack' && parsed.reply !== 'OK') {
+                log.warn(`Cloud ${parsed.method} failed for "${parsed.name}": ${parsed.reply}`);
+            }
+            const parsedData = this.parseMessage(parsed);
+            if (this.vm) this.vm.postIOData('cloud', parsedData);
         });
     }
 
@@ -140,7 +150,9 @@ class LanquCloudProvider {
     }
 
     _sendCloudData (data) {
-        this.connection.send(`${data}\n`);
+        if (this.connection && this.connection.readyState === WebSocket.OPEN) {
+            this.connection.send(`${data}\n`);
+        }
     }
 
     createVariable (name, value) {
@@ -160,17 +172,25 @@ class LanquCloudProvider {
     }
 
     requestCloseConnection () {
-        if (this.connection &&
-            this.connection.readyState !== WebSocket.CLOSING &&
-            this.connection.readyState !== WebSocket.CLOSED) {
-            this.connection.onclose = () => {};
-            this.connection.onerror = () => {};
-            this.connection.close();
+        try {
+            if (this.connection &&
+                this.connection.readyState !== WebSocket.CLOSING &&
+                this.connection.readyState !== WebSocket.CLOSED) {
+                this.connection.onclose = () => {};
+                this.connection.onerror = () => {};
+                this.connection.close();
+            }
+        } finally {
+            this.clear();
         }
-        this.clear();
     }
 
     clear () {
+        this.isTryingToConnect = false;
+        if (this.sendCloudData && typeof this.sendCloudData.cancel === 'function') {
+            this.sendCloudData.cancel();
+        }
+        this.queuedData = [];
         this.connection = null;
         this.vm = null;
         this.username = null;

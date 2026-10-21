@@ -1,7 +1,7 @@
 # Scratch 云变量全链路支持设计
 
 - 日期：2026-10-21
-- 状态：已确认，待实现
+- 状态：已实现
 - 范围：`happy-scratch-mono` 前端、`teaching-open` 宿主页与后端 `ScratchWebSocket`
 
 ## 1. 目标
@@ -113,10 +113,11 @@ cloudControl: {
 ```
 
 - 初始化时从 `scratchConfig` 解析。
-- `setCloudId(id)` 更新 `cloudProjectId`，触发 `cloudManagerHOC` 断开旧连接并连接新作品。
+- `setCloudId(id)` 更新 `cloudProjectId`，触发 `cloudManagerHOC` 断开旧连接并连接新作品；空值和默认 `'0'` 被忽略。
 - `setEnableCouldData(enable)` 更新 `cloudEnabled`。
 - `setAuthorUsername(name)` 更新 `cloudUsername`。
 - `session.token` 是否存在决定 `cloudWritable`。
+- 匿名用户不连接 `create` / `draft:` 草稿空间；已保存作品仍可只读连接。
 
 ## 5. 前端改动
 
@@ -193,6 +194,7 @@ cloudControl: {
 新增 `resolveProjectId(projectId, loginUser)`：
 
 - `projectId == "create"` 且用户已登录 → `draft:<username>`。
+- `projectId == "create"` 且匿名 → 拒绝，避免读取共享的旧 `scratch:cloud:create`。
 - `projectId` 以 `draft:` 开头 → 只允许该用户使用。
 - 其它情况 → 原样返回作品 ID。
 
@@ -200,12 +202,12 @@ cloudControl: {
 
 ### 6.2 权限
 
-- `handshake`：允许匿名读取。
+- `handshake`：允许匿名读取已保存作品；`create` 草稿空间仍需登录。
 - `set`：必须提供有效 token，否则 `ack FAIL` 且不写 Redis。
 - `create` / `delete` / `rename`：
   - 正式作品：必须是作品作者。
   - 草稿作品：必须是 draft 所有者。
-- 无法解析 token 或作品不存在时返回 `ack FAIL`。
+- 无法解析 token，或 `create` / `delete` / `rename` 的作品不存在时返回 `ack FAIL`。
 
 ### 6.3 协议
 
@@ -251,22 +253,24 @@ cloudControl: {
 
 ### 8.2 wrapper 验证
 
-- 用 mock WebSocket / 手动 playground 验证：
-  - 初始 `cloudData.id="create"` 能连接。
-  - 调用 `setCloudId("123")` 后重连到 123。
-  - 调用 `setEnableCouldData(false)` 后断开。
-  - 再调用 `setEnableCouldData(true)` 后重连。
+- 已用 Playwright + 本地 mock WebSocket 验证：
+  - 初始 `enable=false`，运行时 `setEnableCouldData(true)` 能建立连接。
+  - 初始连接使用 `project_id="create"`，并携带 `session.token` / `session.username`。
+  - 调用 `setCloudId("work-1")` 后断开并重连到 `work-1`。
+  - 调用 `setEnableCouldData(false)` 后断开，再次开启后重连。
+  - `set` 消息能发到服务端；服务端广播的 `set` 能更新舞台云变量。
+  - `setAuthorUsername("teacher")` 后按新用户名重连。
 
 ### 8.3 后端验证
 
 - 编译 `api` 模块。
-- 用 WebSocket 客户端模拟：
+- 已有单测覆盖：草稿 projectId 规范化、draft 所有者校验、匿名 `set` 拒绝、登录 `set` 写 Redis、正式作品作者校验、草稿变量上限、变量名/值长度、Redis key 前缀。
+- 有 Redis / 登录 token 环境时仍需跑真实 WebSocket 双客户端验证：
   1. `handshake`（匿名可读）。
   2. 匿名 `set` → 收到 `ack FAIL`。
   3. 登录 `set` → Redis 写入并广播。
   4. 新作品 `project_id="create"` → Redis key 为 `scratch:cloud:draft:<username>`。
   5. `create` / `delete` / `rename` 作者校验。
-- 有 Redis 环境时跑双客户端同步。
 
 ### 8.4 构建
 
@@ -288,6 +292,7 @@ mvn -pl jeecg-boot-module-system -am -DskipTests compile
 - 单实例 sessionPool 不支持多实例广播。
 - 草稿值在第一次保存后不迁移到正式作品；重新打开作品时使用项目文件里的初始值。
 - 匿名用户可以读取任意已知 workId 的云变量；写操作需要登录。
+- 当前 `set` 只要求有效登录 token，尚未按作品作者/班级成员限制写入；后续如需严格权限需再补作品访问校验。
 - 播放器匿名用户如果运行含云变量的项目，项目代码的 `set` 会被后端拒绝，可能产生控制台日志。
 
 ## 10. 涉及文件
@@ -298,6 +303,7 @@ mvn -pl jeecg-boot-module-system -am -DskipTests compile
 - `packages/scratch-gui/PATCHES.md`
 - `packages/scratch-gui/test/unit/util/cloud-manager-hoc.test.jsx`
 - `packages/lanqu-scratch-gui/src/api/scratch-api.js`
+- `packages/lanqu-scratch-gui/src/index.js`
 - `packages/lanqu-scratch-gui/src/storage/lanqu-storage.js`
 - `packages/lanqu-scratch-gui/src/storage/lanqu-cloud-provider.js`
 - `deploy/teaching-open/scratch3/index.html`
@@ -306,3 +312,5 @@ mvn -pl jeecg-boot-module-system -am -DskipTests compile
 后端：
 
 - `teaching-open/api/jeecg-boot-module-system/src/main/java/org/jeecg/modules/message/websocket/ScratchWebSocket.java`
+- `teaching-open/api/jeecg-boot-module-system/src/test/java/org/jeecg/modules/message/websocket/ScratchWebSocketTest.java`
+- `teaching-open/api/jeecg-boot-module-system/src/test/java/org/jeecg/modules/message/websocket/ScratchWebSocketAuthTest.java`

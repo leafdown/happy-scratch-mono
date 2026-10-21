@@ -324,10 +324,10 @@ describe('CloudManagerHOC', () => {
             />
         );
 
-        expect(vm.setCloudProvider.mock.calls.length).toBe(2);
-        expect(vm.setCloudProvider).toHaveBeenCalledWith(null);
+        expect(vm.setCloudProvider.mock.calls.length).toBe(3);
+        expect(vm.setCloudProvider).toHaveBeenNthCalledWith(2, null);
         expect(requestCloseConnection).toHaveBeenCalledTimes(1);
-
+        expect(CloudProvider).toHaveBeenCalledTimes(2);
     });
 
     test('username changing should trigger cloudProvider disconnection', () => {
@@ -356,10 +356,10 @@ describe('CloudManagerHOC', () => {
             />
         );
 
-        expect(vm.setCloudProvider.mock.calls.length).toBe(2);
-        expect(vm.setCloudProvider).toHaveBeenCalledWith(null);
+        expect(vm.setCloudProvider.mock.calls.length).toBe(3);
+        expect(vm.setCloudProvider).toHaveBeenNthCalledWith(2, null);
         expect(requestCloseConnection).toHaveBeenCalledTimes(1);
-
+        expect(CloudProvider).toHaveBeenCalledTimes(2);
     });
 
     test('project without cloud data should not trigger cloud connection', () => {
@@ -469,5 +469,139 @@ describe('CloudManagerHOC', () => {
         expect(vm.setCloudProvider.mock.calls.length).toBe(2);
         expect(vm.setCloudProvider).toHaveBeenCalledWith(null);
         expect(requestCloseConnection).toHaveBeenCalledTimes(1);
+    });
+
+    describe('cloudControl', () => {
+        const Component = () => <div />;
+
+        test('projectId connects before isShowingWithId becomes true', () => {
+            const WrappedComponent = cloudManagerHOC(Component);
+            render(
+                <WrappedComponent
+                    hasCloudPermission
+                    cloudControl={{projectId: 'work-1'}}
+                    cloudHost="nonEmpty"
+                    store={stillLoadingStore}
+                    username="user"
+                    vm={vm}
+                />
+            );
+
+            expect(CloudProvider).toHaveBeenCalledTimes(1);
+            expect(CloudProvider.mock.calls[0][3]).toBe('work-1');
+            expect(vm.setCloudProvider).toHaveBeenCalledWith(mockCloudProviderInstance);
+        });
+
+        test('disabled cloudControl prevents connection', () => {
+            const WrappedComponent = cloudManagerHOC(Component);
+            render(
+                <WrappedComponent
+                    hasCloudPermission
+                    cloudControl={{enabled: false, projectId: 'work-1'}}
+                    cloudHost="nonEmpty"
+                    store={store}
+                    username="user"
+                    vm={vm}
+                />
+            );
+
+            expect(CloudProvider).not.toHaveBeenCalled();
+            expect(vm.setCloudProvider).not.toHaveBeenCalled();
+        });
+
+        test('canWrite false still connects but hides cloud use from the GUI', () => {
+            const Child = jest.fn(() => <div />);
+            const WrappedComponent = cloudManagerHOC(Child);
+            render(
+                <WrappedComponent
+                    hasCloudPermission
+                    cloudControl={{canWrite: false, projectId: 'work-1'}}
+                    cloudHost="nonEmpty"
+                    store={store}
+                    username="user"
+                    vm={vm}
+                />
+            );
+
+            expect(CloudProvider).toHaveBeenCalledTimes(1);
+            expect(Child.mock.calls[0][0].canUseCloud).toBe(false);
+        });
+
+        test('canModifyCloudData override connects in editor mode', () => {
+            const editorStore = mockStore({
+                scratchGui: {
+                    config: legacyConfig,
+                    projectState: {
+                        projectId: '1234',
+                        loadingState: LoadingState.SHOWING_WITH_ID
+                    },
+                    mode: {
+                        hasEverEnteredEditor: true
+                    }
+                }
+            });
+            const WrappedComponent = cloudManagerHOC(Component);
+            render(
+                <WrappedComponent
+                    hasCloudPermission
+                    cloudControl={{canModifyCloudData: true, projectId: 'work-1'}}
+                    cloudHost="nonEmpty"
+                    store={editorStore}
+                    username="user"
+                    vm={vm}
+                />
+            );
+
+            expect(CloudProvider).toHaveBeenCalledTimes(1);
+        });
+
+        test('video sensing still prevents connection even with canModifyCloudData', () => {
+            vm.extensionManager.isExtensionLoaded = jest.fn(extension => extension === 'videoSensing');
+            const WrappedComponent = cloudManagerHOC(Component);
+            render(
+                <WrappedComponent
+                    hasCloudPermission
+                    cloudControl={{canModifyCloudData: true, projectId: 'work-1'}}
+                    cloudHost="nonEmpty"
+                    store={store}
+                    username="user"
+                    vm={vm}
+                />
+            );
+
+            expect(CloudProvider).not.toHaveBeenCalled();
+        });
+
+        test('projectId change disconnects and reconnects', () => {
+            const WrappedComponent = cloudManagerHOC(Component);
+            const {rerender} = render(
+                <WrappedComponent
+                    hasCloudPermission
+                    cloudControl={{projectId: 'work-1'}}
+                    cloudHost="nonEmpty"
+                    store={stillLoadingStore}
+                    username="user"
+                    vm={vm}
+                />
+            );
+
+            expect(CloudProvider).toHaveBeenCalledTimes(1);
+            const requestCloseConnection = mockCloudProviderInstance.requestCloseConnection;
+
+            rerender(
+                <WrappedComponent
+                    hasCloudPermission
+                    cloudControl={{projectId: 'work-2'}}
+                    cloudHost="nonEmpty"
+                    store={stillLoadingStore}
+                    username="user"
+                    vm={vm}
+                />
+            );
+
+            expect(requestCloseConnection).toHaveBeenCalledTimes(1);
+            expect(CloudProvider).toHaveBeenCalledTimes(2);
+            expect(CloudProvider.mock.calls[1][3]).toBe('work-2');
+        });
     });
 });

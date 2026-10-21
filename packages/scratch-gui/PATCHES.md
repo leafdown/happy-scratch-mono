@@ -27,6 +27,7 @@ To ease upstream syncs (see `scripts/upgrade-from-upstream.sh`), all patches are
 | P11b | `index-standalone.tsx` | Export `setCustomLayout` |
 | P12 | `containers/controls.jsx` + `components/controls/controls.jsx` | Green flag/stop visibility + before hooks |
 | P13 | `components/stage-header/stage-header.jsx` | Fullscreen button visibility + before hooks |
+| P14 | `lib/cloud-manager-hoc.jsx` | Optional `cloudControl` override for projectId/username/enable/write, and reconnect on stale connection |
 | — | `components/stage-wrapper/stage-wrapper.jsx` | Forward `stageHeaderConfig`/`controlsConfig` |
 
 ## Not applied (deferred / optional)

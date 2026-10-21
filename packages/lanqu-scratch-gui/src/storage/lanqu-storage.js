@@ -107,18 +107,18 @@ const createLanquStorage = config => {
         })
         : undefined;
 
-    const cloudVariables = config.cloudData && config.cloudData.enable
-        ? {
-            createProvider: (cloudHost, vm, username, projectId) => new LanquCloudProvider({
-                cloudHost: cloudHost || config.cloudData.api,
-                vm,
-                username,
-                projectId,
-                token: config.session && config.session.token,
-                cloudId: config.cloudData.id
-            })
-        }
-        : undefined;
+    // Keep the provider factory available even when cloud data starts disabled.
+    // The GUI can enable it at runtime through setEnableCouldData.
+    const cloudVariables = {
+        createProvider: (cloudHost, vm, username, projectId) => new LanquCloudProvider({
+            cloudHost: cloudHost || (config.cloudData && config.cloudData.api),
+            vm,
+            username,
+            projectId,
+            token: config.session && config.session.token,
+            cloudId: config.cloudData && config.cloudData.id
+        })
+    };
 
     return {
         scratchStorage,

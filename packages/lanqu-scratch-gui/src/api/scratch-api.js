@@ -17,11 +17,38 @@ import {
     defaultProjectId
 } from '@scratch/scratch-gui/standalone';
 
+const getCloudProjectId = config => {
+    const id = config.cloudData && config.cloudData.id;
+    if (id == null || id === '') return '';
+    const projectId = String(id);
+    return projectId === defaultProjectId ? '' : projectId;
+};
+
+const getCloudUsername = config => (
+    (config.projectInfo && config.projectInfo.authorUsername) ||
+    (config.session && config.session.username) ||
+    (config.menuBar && config.menuBar.userAvatar && config.menuBar.userAvatar.username) ||
+    'anonymous'
+);
+
+const isCloudEnabled = config => !!(config.cloudData && config.cloudData.enable);
+
+const canWriteCloud = config => {
+    const token = config.session && config.session.token;
+    return !!(token && String(token).trim());
+};
+
 const scratchApiHOC = (config, store) => WrappedComponent => {
     class ScratchApiWrapper extends React.Component {
         constructor (props) {
             super(props);
             this.vm = null;
+            this.state = {
+                cloudEnabled: isCloudEnabled(config),
+                cloudProjectId: getCloudProjectId(config),
+                cloudUsername: getCloudUsername(config),
+                cloudWritable: canWriteCloud(config)
+            };
             bindAll(this, ['handleVmInit']);
         }
 
@@ -175,13 +202,24 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
                 });
             };
             window.scratch.setEnableCouldData = enable => {
-                if (config.cloudData) config.cloudData.enable = enable;
+                if (!config.cloudData) return;
+                config.cloudData.enable = !!enable;
+                this.setState({cloudEnabled: !!enable});
             };
             window.scratch.setCloudId = id => {
-                if (config.cloudData) config.cloudData.id = id;
+                // Ignore empty / default project ids so a transient load cannot
+                // disconnect a live cloud session.
+                if (id == null || id === '') return;
+                const projectId = String(id);
+                if (projectId === defaultProjectId) return;
+                if (!config.cloudData) config.cloudData = {};
+                config.cloudData.id = projectId;
+                this.setState({cloudProjectId: projectId});
             };
             window.scratch.setAuthorUsername = username => {
-                if (config.projectInfo) config.projectInfo.authorUsername = username;
+                if (!config.projectInfo) return;
+                config.projectInfo.authorUsername = username == null ? '' : String(username);
+                this.setState({cloudUsername: getCloudUsername(config)});
             };
             window.scratch.pushSpriteLibrary = data => this.pushAssets('sprites', data);
             window.scratch.pushCostumesLibrary = data => this.pushAssets('costumes', data);
@@ -206,9 +244,24 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
         }
 
         render () {
+            const projectId = this.state.cloudProjectId;
+            const isDraft = projectId === 'create' || projectId.indexOf('draft:') === 0;
+            const cloudControl = {
+                // Draft buckets are per-user and require login; anonymous players
+                // can still connect read-only to a saved work id.
+                enabled: this.state.cloudEnabled && !!projectId &&
+                    (this.state.cloudWritable || !isDraft),
+                projectId,
+                username: this.state.cloudUsername,
+                // Lanqu saves projects through the host (canSave is false), but
+                // cloud variables must still be writable in the editor.
+                canModifyCloudData: true,
+                canWrite: this.state.cloudWritable
+            };
             return (
                 <WrappedComponent
                     {...this.props}
+                    cloudControl={cloudControl}
                     onVmInit={this.handleVmInit}
                 />
             );
