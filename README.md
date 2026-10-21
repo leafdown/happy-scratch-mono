@@ -2,7 +2,7 @@
 
 基于 [scratchfoundation/scratch-editor](https://github.com/scratchfoundation/scratch-editor) v15.2.0 的 Scratch 编辑器定制发行版，为蓝鹊（Lanqu）在线编程教学平台提供可嵌入的 Scratch 3.0 编辑器。
 
-本项目将 [easy-scratch3](https://github.com/open-scratch/easy-scratch3)（基于 2021 版 scratch-gui 的二次封装）的全部定制能力，以 **方案**（薄封装层 + 最小化源码 patch）移植到最新的 scratch-editor v15.2.0 之上。
+本项目将 [easy-scratch3](https://github.com/open-scratch/easy-scratch3)（基于 2021 版 scratch-gui 的二次封装）的定制模型 —— `window.scratchConfig` 声明式配置 + `window.scratch.*` 命令式 API —— 以薄封装层 + 最小化源码 patch 的方式移植到最新的 scratch-editor v15.2.0 之上。依赖旧版内部实现的少数配置项没有对应实现，差异见「配置驱动」。
 
 ## 项目目标
 
@@ -44,27 +44,38 @@ scripts/
 - **会话/鉴权**：`session.token` / `session.username`
 - **背包**：`backpack.enable` / `backpack.api`（HTTP 或 localStorage 本地模式）
 - **云变量**：`cloudData.enable` / `cloudData.id` / `cloudData.api`（WebSocket）
-- **作品元信息**：`projectInfo.projectName` / `authorUsername` / `authorAvatar`
+- **作品元信息**：`projectInfo.projectName`（项目加载后写入标题栏）/ `authorUsername`（云变量身份）/ `authorAvatar`（头像兜底）
 - **LOGO**：`logo.show` / `logo.url` / `logo.handleClickLogo`
-- **菜单栏**：背景色、语言切换、新建/加载/保存/教程/Debug 按钮显隐+拦截、用户头像、我的物品、自定义按钮（`customButtons`）
+- **菜单栏**：背景色、语言切换、新建/加载/保存/教程/Turbo/Debug 按钮显隐，新建/加载/保存/教程按钮的 `handleBefore` 拦截，用户头像（`userAvatar.show`；`handleClick` 覆盖默认菜单打开行为）、我的物品、自定义按钮（`customButtons`）
 - **积木区**：缩放比例（`blocks.scale`）、隐藏分类（`hideCatagorys`）、隐藏积木（`hideBlocks`）
 - **舞台区**：全屏/绿旗/停止按钮显隐+拦截、舞台尺寸/缩放
-- **素材库**：`assets.assetHost` / 素材库索引地址 / 打开素材库拦截回调
-- **生命周期钩子**：`handleVmInitialized` / `handleProjectLoaded` / `handleDefaultProjectLoaded`
-- **默认项目**：`defaultProjectURL`
+- **素材库**：`assets.assetHost`；自定义素材通过 `window.scratch.push*Library` 运行时注入
+- **生命周期钩子**：`handleVmInitialized` / `handleProjectLoaded`（每次 VM 加载项目后触发，包括 `loadProject`）/ `handleDefaultProjectLoaded`（首个项目加载后触发一次）
+
+> 与 easy-scratch3 的差异：`defaultProjectURL`、`assets.defaultIndex` 和 `assets.handleBefore*LibraryOpen` 依赖旧版内部实现，v15 封装未提供。默认作品请在 `handleDefaultProjectLoaded` 中调用 `window.scratch.loadProject(url, cb)`；自定义素材请用 `window.scratch.push*Library` 注入。
+
+### React 组件
+
+```jsx
+import {EasyScratch} from '@lanqu/scratch-gui';
+
+<EasyScratch scratchConfig={config} style={{height: '100vh'}} />
+```
+
+`scratchConfig` 只在挂载时读取，需要更换配置时用 `key` 重新挂载；`isPlayerOnly` 可作为独立 prop 传入并在初始化时生效。其余 props 透传给编辑器根节点，`ref` 暴露 `getRoot()` / `unmount()` / `config` / `store`。也可以继续使用命令式的 `createEasyRoot(config, container)`。
 
 ### 命令式 API（`window.scratch.*`）
 
 | API | 功能 |
 |-----|------|
-| `loadProject(url, cb)` | 从 URL 加载 .sb3 项目 |
-| `getProjectFile(cb)` | 导出当前项目为 .sb3 |
+| `loadProject(url, cb)` | 从 URL 加载 .sb3；失败时 `cb(error)` |
+| `getProjectFile(cb)` | 导出当前项目为 .sb3；失败时 `cb(null, error)` |
 | `getProjectCover(cb)` / `getProjectCoverBlob(cb)` | 获取舞台截图 |
 | `getProjectName()` / `setProjectName(name)` | 读写项目名 |
 | `setPlayerOnly(bool)` / `setFullScreen(bool)` | 切换模式 |
 | `setLocale(locale)` | 切换语言 |
 | `setEnableCouldData(bool)` / `setCloudId(id)` / `setAuthorUsername(name)` | 云变量控制 |
-| `pushSpriteLibrary(data)` 等 4 个 | 运行时追加素材库 |
+| `pushSpriteLibrary(data)` 等 4 个 | 运行时追加素材库（按素材 id 去重） |
 
 ## 与 teaching-open 集成
 
