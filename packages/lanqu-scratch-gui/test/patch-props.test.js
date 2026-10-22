@@ -183,4 +183,33 @@ describe('buildPatchProps', () => {
         expect(props.canSave).toBe(false);
         expect(props.canEditTitle).toBe(true);
     });
+
+    describe('read-only mode', () => {
+        it('flags the GUI as read-only and locks the blocks workspace', () => {
+            const props = buildPatchProps(mergeConfig({readOnly: true}));
+            expect(props.readOnly).toBe(true);
+            expect(props.blocksOptions.readOnly).toBe(true);
+        });
+
+        it('keeps the blocks scale alongside the read-only lock', () => {
+            const props = buildPatchProps(mergeConfig({readOnly: true, blocks: {scale: 0.9}}));
+            expect(props.blocksOptions).toEqual({
+                zoom: {startScale: 0.9},
+                readOnly: true
+            });
+        });
+    });
+
+    describe('blocks-only mode', () => {
+        it('hides the stage and target pane', () => {
+            const props = buildPatchProps(mergeConfig({blocksOnly: true}));
+            expect(props.blocksOnly).toBe(true);
+        });
+
+        it('defaults to the full editor when unset', () => {
+            const props = buildPatchProps(mergeConfig({}));
+            expect(props.blocksOnly).toBeUndefined();
+            expect(props.readOnly).toBeUndefined();
+        });
+    });
 });

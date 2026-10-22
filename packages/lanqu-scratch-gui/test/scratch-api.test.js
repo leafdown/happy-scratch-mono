@@ -30,14 +30,19 @@ const createStore = () => {
     };
 };
 
-const createVm = () => ({
-    emitWorkspaceUpdate: jest.fn(),
-    loadProject: jest.fn(() => Promise.resolve()),
-    postIOData: jest.fn(),
-    renderer: {},
-    runtime: {on: jest.fn(), off: jest.fn()},
-    saveProjectSb3: jest.fn(() => Promise.resolve(new Blob()))
-});
+const createVm = () => {
+    const listeners = {};
+    return {
+        emitWorkspaceUpdate: jest.fn(),
+        on: jest.fn((event, fn) => { (listeners[event] = listeners[event] || []).push(fn); }),
+        emit: jest.fn(event => (listeners[event] || []).forEach(fn => fn())),
+        loadProject: jest.fn(() => Promise.resolve()),
+        postIOData: jest.fn(),
+        renderer: {},
+        runtime: {on: jest.fn(), off: jest.fn()},
+        saveProjectSb3: jest.fn(() => Promise.resolve(new Blob()))
+    };
+};
 
 const flushPromises = () => new Promise(resolve => setTimeout(resolve, 0));
 
@@ -118,6 +123,38 @@ describe('scratchApiHOC', () => {
         action = store.dispatch.mock.calls[store.dispatch.mock.calls.length - 1][0];
         expect(action.dynamicAssets.sprites).toHaveLength(1);
         expect(action.dynamicAssets.costumes).toEqual([{id: 'costume-a'}]);
+    });
+
+    it('tracks project edits and resets the dirty flag on load', () => {
+        const handleProjectChanged = jest.fn();
+        const {getProps} = mount({handleProjectChanged});
+        const vm = createVm();
+        act(() => getProps().onVmInit(vm));
+
+        // A brand-new project is not dirty until the first edit.
+        expect(window.scratch.isDirty()).toBe(false);
+
+        // VM report of an edit marks dirty + notifies the host.
+        act(() => vm.emit('PROJECT_CHANGED'));
+        expect(window.scratch.isDirty()).toBe(true);
+        expect(handleProjectChanged).toHaveBeenCalledWith(true);
+
+        // markSaved clears the flag and tells the host.
+        act(() => window.scratch.markSaved());
+        expect(window.scratch.isDirty()).toBe(false);
+        expect(handleProjectChanged).toHaveBeenCalledWith(false);
+
+        // A project reload resets the dirty flag (resetDirty is registered on
+        // PROJECT_LOADED alongside handleProjectLoaded and the optional
+        // handleDefaultProjectLoaded hook; firing all of them is equivalent to
+        // the VM's load sequence and resets dirty).
+        act(() => vm.emit('PROJECT_CHANGED'));
+        expect(window.scratch.isDirty()).toBe(true);
+        const loaded = vm.runtime.on.mock.calls
+            .filter(([event]) => event === 'PROJECT_LOADED')
+            .map(([, fn]) => fn);
+        act(() => loaded.forEach(fn => fn()));
+        expect(window.scratch.isDirty()).toBe(false);
     });
 
     it('reports loadProject HTTP failures to the callback', async () => {

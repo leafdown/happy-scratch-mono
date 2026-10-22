@@ -97,9 +97,27 @@ const defaultConfig = {
     // Boot in player-only mode. Only affects the initial EditorState; use
     // window.scratch.setPlayerOnly() to switch later.
     isPlayerOnly: false,
+    // Read-only editor: disables block editing (workspace marked read-only),
+    // hides the sprite/backdrop add, delete, duplicate and export affordances,
+    // and disables the sprite property inputs. Stage runs untouched so projects
+    // still play. Default false.
+    readOnly: false,
+    // Blocks-only layout: hides the stage and target pane entirely so the blocks
+    // editor fills the window. Default false.
+    blocksOnly: false,
     handleVmInitialized: () => {},
     handleProjectLoaded: () => {},
-    handleDefaultProjectLoaded: () => {}
+    handleDefaultProjectLoaded: () => {},
+    // Dirty-state callback: fires with true whenever the VM reports the project
+    // changed (blocks moved, costume uploaded, ...). Hosts pair it with
+    // window.scratch.isDirty()/markSaved() to drive their own autosave and
+    // beforeunload prompts. Default no-op keeps behavior unchanged.
+    handleProjectChanged: () => {},
+    // Cloud connection status callback: fires with 'connecting', 'connected',
+    // 'error' or 'disconnected' as the Lanqu cloud WebSocket transitions state.
+    // Hosts use this to surface "cloud variables are offline" instead of
+    // failing silently.
+    handleCloudStatusChange: () => {}
 };
 
 /**

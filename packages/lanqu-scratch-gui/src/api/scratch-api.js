@@ -119,7 +119,7 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
                 cloudUsername: getCloudUsername(config),
                 cloudWritable: canWriteCloud(config)
             };
-            bindAll(this, ['handleVmInit', 'handleProjectLoaded']);
+            bindAll(this, ['handleVmInit', 'handleProjectLoaded', 'handleProjectChangedEvent', 'resetDirty']);
         }
 
         componentDidMount () {
@@ -143,6 +143,13 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
                 // window.scratch.loadProject() calls (which do not update the
                 // GUI's redux project state).
                 vm.runtime.on('PROJECT_LOADED', this.handleProjectLoaded);
+                // Track edits for the dirty-state API. PROJECT_CHANGED fires on
+                // every project edit; the GUI's own flag (state.scratchGui.projectChanged)
+                // is only updated in the editor (not player/fullscreen), so a
+                // separate listener guarantees onProjectChanged works everywhere.
+                vm.on('PROJECT_CHANGED', this.handleProjectChangedEvent);
+                this.dirty = false;
+                vm.runtime.on('PROJECT_LOADED', this.resetDirty);
                 // Fire handleDefaultProjectLoaded once the first project (the
                 // default one) finishes loading — easy-scratch3 uses this hook
                 // to load a workId/workFile project over the default.
@@ -178,6 +185,24 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
             }
         }
 
+        // VM PROJECT_CHANGED fires on every project edit (blocks created/moved/
+        // deleted, costumes/sounds changed). Track a dirty flag here and notify
+        // the host through the config hook. Listening on the VM directly (not
+        // redox, which is only maintained in the non-player editor) means the
+        // host gets a truthful signal in player-only sessions too.
+        handleProjectChangedEvent () {
+            this.dirty = true;
+            if (config.handleProjectChanged) {
+                try { config.handleProjectChanged(true); } catch (e) { console.error(e); } // eslint-disable-line no-console
+            }
+        }
+
+        // A freshly loaded project is clean. Called on every PROJECT_LOADED,
+        // which the VM emits once per load (including window.scratch.loadProject).
+        resetDirty () {
+            this.dirty = false;
+        }
+
         // "create" means "the work that is not saved yet". The server derives
         // the bucket from the logged-in account, the session id only tells the
         // server which of that account's drafts is meant.
@@ -204,6 +229,17 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
             window.scratch.setPlayerOnly = isPlayerOnly => dispatch(setPlayer(isPlayerOnly));
             window.scratch.setFullScreen = isFullScreen => dispatch(setFullScreen(isFullScreen));
             window.scratch.setLocale = locale => dispatch(selectLocale(locale));
+            // Cloud connection status API. Status strings are emitted by the
+            // Lanqu cloud provider (see lanqu-storage.createProvider) as
+            // 'connecting' | 'connected' | 'error' | 'disconnected'. The most
+            // recent status is replayed on registration so a late host gets the
+            // current state without waiting for the next transition.
+            window.scratch.onCloudStatusChange = callback => {
+                config.__cloudStatusCallback = typeof callback === 'function' ? callback : null;
+                if (config.__cloudStatusCallback && config.__lastCloudStatus) {
+                    config.__cloudStatusCallback(config.__lastCloudStatus);
+                }
+            };
             // Trigger default project load (mirrors HashParserHOC's setProjectId('0')).
             // Without this the editor boots with an empty target list.
             dispatch(setProjectId(defaultProjectId));
@@ -309,6 +345,17 @@ const scratchApiHOC = (config, store) => WrappedComponent => {
                 return state.scratchGui?.projectTitle || state.scratchGui?.projectState?.projectId || '';
             };
             window.scratch.setProjectName = name => this.setProjectTitle(name);
+            // Dirty-state API: the host calls markSaved() after persisting so
+            // isDirty() and onProjectChanged stay consistent with its autosave.
+            // isDirty() returns false until the first edit to avoid claiming a
+            // pristine project is unsaved.
+            window.scratch.isDirty = () => this.dirty === true;
+            window.scratch.markSaved = () => {
+                this.dirty = false;
+                if (config.handleProjectChanged) {
+                    try { config.handleProjectChanged(false); } catch (e) { console.error(e); } // eslint-disable-line no-console
+                }
+            };
             window.scratch.setEnableCouldData = enable => {
                 if (!config.cloudData) return;
                 config.cloudData.enable = !!enable;

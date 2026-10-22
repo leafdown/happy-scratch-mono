@@ -21,12 +21,16 @@ const log = {
 };
 
 class LanquCloudProvider {
-    constructor ({cloudHost, vm, username, projectId, token, cloudId}) {
+    constructor ({cloudHost, vm, username, projectId, token, cloudId, onStatusChange}) {
         this.vm = vm;
         this.username = username || '';
         this.projectId = projectId || cloudId || '';
         this.cloudHost = cloudHost;
         this.token = token || '';
+        // Optional host callback for connection-state transitions, so hosts can
+        // surface "cloud variables are offline" instead of failing silently.
+        this.onStatusChange = onStatusChange || (() => {});
+        this._lastStatus = null;
 
         this.connectionAttempts = 0;
         this.queuedData = [];
@@ -38,6 +42,20 @@ class LanquCloudProvider {
         this.sendCloudData = throttle(this._sendCloudData, 100);
 
         this.openConnection();
+        // Connecting at construction is reported to the host (if any).
+        this._notifyStatus('connecting');
+    }
+
+    // Notify the host only on actual transitions, so repeated open/close
+    // retries don't spam the same status.
+    _notifyStatus (status) {
+        if (status === this._lastStatus) return;
+        this._lastStatus = status;
+        try {
+            this.onStatusChange(status);
+        } catch (e) {
+            log.error('cloud status callback threw', e);
+        }
     }
 
     isConnectedOrConnecting () {
@@ -65,6 +83,7 @@ class LanquCloudProvider {
 
     onError (event) {
         log.error('Websocket connection error', event);
+        if (this.isTryingToConnect) this._notifyStatus('error');
     }
 
     onMessage (event) {
@@ -96,6 +115,7 @@ class LanquCloudProvider {
         }
         this.writeToServer('handshake');
         log.info('Successfully connected to clouddata server.');
+        this._notifyStatus('connected');
         // Management messages must not go through the throttle: throttle only
         // keeps the first and last argument, which would drop creates when a
         // project with multiple cloud variables loads.
@@ -107,6 +127,7 @@ class LanquCloudProvider {
         // Ignore close events after requestCloseConnection()/clear().
         if (!this.isTryingToConnect) return;
         log.info('Closed connection to websocket');
+        this._notifyStatus('disconnected');
         const randomizedTimeout = this.randomizeDuration(this.exponentialTimeout());
         this.setTimeout(this.openConnection.bind(this), randomizedTimeout);
     }

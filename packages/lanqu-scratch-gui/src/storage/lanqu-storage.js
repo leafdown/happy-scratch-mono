@@ -89,10 +89,20 @@ const createLanquStorage = config => {
             username,
             projectId,
             token: config.session && config.session.token,
-            cloudId: config.cloudData && config.cloudData.id
+            cloudId: config.cloudData && config.cloudData.id,
+            // Forward connection-state transitions to the wrapper's status API
+            // (window.scratch.onCloudStatusChange) so hosts can react.
+            onStatusChange: status => {
+                config.__lastCloudStatus = status;
+                if (config.handleCloudStatusChange) {
+                    try { config.handleCloudStatusChange(status); } catch (e) { console.error(e); } // eslint-disable-line no-console
+                }
+                if (config.__cloudStatusCallback) {
+                    try { config.__cloudStatusCallback(status); } catch (e) { console.error(e); } // eslint-disable-line no-console
+                }
+            }
         })
     };
-
     return {
         scratchStorage,
         backpackStorage,

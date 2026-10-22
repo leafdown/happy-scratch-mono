@@ -78,6 +78,15 @@ const buildPatchProps = (config, extraProps = {}) => {
     props.canEditTitle = true;
     // 禁止从 scratch 菜单直接保存(交由自定义提交按钮)
     props.canSave = false;
+    // 只读模式:锁定 blocks 工作区并隐藏舞台编辑控件(见 P21 补丁)。
+    // readOnly 同时并入下方 blocks 段的 blocksOptions,注入 scratch-blocks。
+    if (config.readOnly) {
+        props.readOnly = true;
+    }
+    // 纯积木模式:隐藏舞台与目标面板,积木编辑器占满窗口(见 P22 补丁)。
+    if (config.blocksOnly) {
+        props.blocksOnly = true;
+    }
     // 传递素材 host 地址,否则 GUI 组件挂载后会 setAssetHost 到默认 MIT
     if (config.assets && config.assets.assetHost) {
         props.assetHost = config.assets.assetHost;
@@ -130,7 +139,10 @@ const buildPatchProps = (config, extraProps = {}) => {
     // Blocks (P3/P4): scale + hide config
     if (config.blocks) {
         props.blocksOptions = {
-            zoom: {startScale: config.blocks.scale}
+            zoom: {startScale: config.blocks.scale},
+            // readOnly(来自 config.readOnly)会让 blocks 工作区只读,与 scale 一起
+            // 通过 workspaceConfig 注入 scratch-blocks。
+            ...(config.readOnly ? {readOnly: true} : {})
         };
         if (config.blocks.hideCatagorys?.length || config.blocks.hideBlocks?.length) {
             props.blocksHideConfig = {
