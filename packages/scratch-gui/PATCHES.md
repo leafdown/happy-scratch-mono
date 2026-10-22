@@ -36,6 +36,12 @@ To ease upstream syncs (see `scripts/upgrade-from-upstream.sh`), all patches are
 | P20 | `components/menu-bar/account-menu.jsx` + `lib/account-menu-options.ts` | Avatar click override (`accountMenuOptions.onClick`) |
 | — | `components/stage-wrapper/stage-wrapper.jsx` | Forward `stageHeaderConfig`/`controlsConfig` |
 
+### Editor modes (stage 6)
+| ID | File | Customization |
+|----|------|---------------|
+| P21 | `components/gui/gui.jsx` + `components/target-pane/target-pane.jsx` + `components/sprite-selector/*` + `components/stage-selector/stage-selector.jsx` | Optional `readOnly` prop: disables the sprite/backdrop add buttons, the delete/duplicate/export affordances, and the sprite property inputs. Block editing is locked by the wrapper passing `readOnly: true` into `blocksOptions` → scratch-blocks `inject()` |
+| P22 | `components/gui/gui.jsx` | Optional `blocksOnly` prop: skips the whole stage-and-target aside so the blocks editor fills the window |
+
 ## Not applied (deferred / optional)
 None currently.
 

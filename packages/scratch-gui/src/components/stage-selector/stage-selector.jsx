@@ -46,6 +46,7 @@ const StageSelector = props => {
         selected,
         raised,
         receivedBlocks,
+        readOnly,
         url,
         onBackdropFileUploadClick,
         onBackdropFileUpload,
@@ -94,36 +95,38 @@ const StageSelector = props => {
                 />
             </div>
             <div className={styles.count}>{backdropCount}</div>
-            <ActionMenu
-                className={styles.addButton}
-                img={backdropIcon}
-                moreButtons={[
-                    {
-                        title: intl.formatMessage(messages.addBackdropFromFile),
-                        img: fileUploadIcon,
-                        onClick: onBackdropFileUploadClick,
-                        fileAccept: '.svg, .png, .bmp, .jpg, .jpeg, .gif',
-                        fileChange: onBackdropFileUpload,
-                        fileInput: fileInputRef,
-                        fileMultiple: true
-                    }, {
-                        title: intl.formatMessage(messages.addBackdropFromSurprise),
-                        img: surpriseIcon,
-                        onClick: onSurpriseBackdropClick
-                    }, {
-                        title: intl.formatMessage(messages.addBackdropFromPaint),
-                        img: paintIcon,
-                        onClick: onEmptyBackdropClick
-                    }, {
-                        title: intl.formatMessage(messages.addBackdropFromLibrary),
-                        img: searchIcon,
-                        onClick: onNewBackdropClick
-                    }
-                ]}
-                title={intl.formatMessage(messages.addBackdropFromLibrary)}
-                tooltipPlace={isRtl(intl.locale) ? 'right' : 'left'}
-                onClick={onNewBackdropClick}
-            />
+            {readOnly ? null : (
+                <ActionMenu
+                    className={styles.addButton}
+                    img={backdropIcon}
+                    moreButtons={[
+                        {
+                            title: intl.formatMessage(messages.addBackdropFromFile),
+                            img: fileUploadIcon,
+                            onClick: onBackdropFileUploadClick,
+                            fileAccept: '.svg, .png, .bmp, .jpg, .jpeg, .gif',
+                            fileChange: onBackdropFileUpload,
+                            fileInput: fileInputRef,
+                            fileMultiple: true
+                        }, {
+                            title: intl.formatMessage(messages.addBackdropFromSurprise),
+                            img: surpriseIcon,
+                            onClick: onSurpriseBackdropClick
+                        }, {
+                            title: intl.formatMessage(messages.addBackdropFromPaint),
+                            img: paintIcon,
+                            onClick: onEmptyBackdropClick
+                        }, {
+                            title: intl.formatMessage(messages.addBackdropFromLibrary),
+                            img: searchIcon,
+                            onClick: onNewBackdropClick
+                        }
+                    ]}
+                    title={intl.formatMessage(messages.addBackdropFromLibrary)}
+                    tooltipPlace={isRtl(intl.locale) ? 'right' : 'left'}
+                    onClick={onNewBackdropClick}
+                />
+            )}
         </Box>
     );
 };
@@ -142,6 +145,7 @@ StageSelector.propTypes = {
     onNewBackdropClick: PropTypes.func,
     onSurpriseBackdropClick: PropTypes.func,
     raised: PropTypes.bool.isRequired,
+    readOnly: PropTypes.bool,
     receivedBlocks: PropTypes.bool.isRequired,
     selected: PropTypes.bool.isRequired,
     url: PropTypes.string

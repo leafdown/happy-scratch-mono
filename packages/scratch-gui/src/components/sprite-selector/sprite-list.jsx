@@ -29,6 +29,7 @@ const SpriteList = function (props) {
         onRemoveSortable,
         ordering,
         raised,
+        readOnly,
         selectedId,
         items
     } = props;
@@ -92,9 +93,11 @@ const SpriteList = function (props) {
                                 name={sprite.name}
                                 selected={sprite.id === selectedId}
                                 onClick={onSelectSprite}
-                                onDeleteButtonClick={onDeleteSprite}
-                                onDuplicateButtonClick={onDuplicateSprite}
-                                onExportButtonClick={onExportSprite}
+                                // readOnly hides the delete/duplicate/export
+                                // affordances by not wiring their handlers.
+                                onDeleteButtonClick={readOnly ? null : onDeleteSprite}
+                                onDuplicateButtonClick={readOnly ? null : onDuplicateSprite}
+                                onExportButtonClick={readOnly ? null : onExportSprite}
                                 withDeleteConfirmation
                                 deleteConfirmationModalPosition={'left'}
                             />
@@ -135,6 +138,7 @@ SpriteList.propTypes = {
     onSelectSprite: PropTypes.func,
     ordering: PropTypes.arrayOf(PropTypes.number),
     raised: PropTypes.bool,
+    readOnly: PropTypes.bool,
     selectedId: PropTypes.string
 };
 

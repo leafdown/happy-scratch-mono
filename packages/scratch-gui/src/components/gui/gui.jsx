@@ -162,6 +162,8 @@ const GUIComponent = props => {
         isTotallyNormal,
         loading,
         logo,
+        readOnly,
+        blocksOnly,
         manuallySaveThumbnails,
         onSetManualThumbnail,
         onSetManualThumbnailButtonClick,
@@ -563,46 +565,49 @@ const GUIComponent = props => {
                             ) : null}
                         </Box>
 
-                        <Box
-                            role="complementary"
-                            aria-label={intl.formatMessage(ariaMessages.stageAndTarget)}
-                            className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}
-                            element="aside"
-                        >
-                            <StageWrapper
-                                isFullScreen={isFullScreen}
-                                isRendererSupported={isRendererSupported}
-                                isRtl={isRtl}
-                                isCreating={isCreating}
-                                stageSize={stageSize}
-                                vm={vm}
-                                ariaRole="region"
-                                ariaLabel={intl.formatMessage(ariaMessages.stage)}
-                                manuallySaveThumbnails={manuallySaveThumbnails}
-                                onSetManualThumbnail={onSetManualThumbnail}
-                                onSetManualThumbnailButtonClick={onSetManualThumbnailButtonClick}
-                                loading={loading}
-                                showNewFeatureCallouts={showNewFeatureCallouts}
-                                userOwnsProject={userOwnsProject}
-                                username={username}
-                                onUpdateProjectThumbnail={onUpdateProjectThumbnail}
-                                stageHeaderConfig={stageHeaderConfig}
-                                controlsConfig={controlsConfig}
-                            />
+                        {blocksOnly ? null : (
                             <Box
-                                className={styles.targetWrapper}
-                                role="region"
-                                aria-label={intl.formatMessage(ariaMessages.targetPane)}
-                                element="section"
+                                role="complementary"
+                                aria-label={intl.formatMessage(ariaMessages.stageAndTarget)}
+                                className={classNames(styles.stageAndTargetWrapper, styles[stageSize])}
+                                element="aside"
                             >
-                                <TargetPane
+                                <StageWrapper
+                                    isFullScreen={isFullScreen}
+                                    isRendererSupported={isRendererSupported}
+                                    isRtl={isRtl}
+                                    isCreating={isCreating}
                                     stageSize={stageSize}
                                     vm={vm}
-                                    onNewSpriteClick={onNewSpriteClick}
-                                    onNewBackdropClick={onNewLibraryBackdropClick}
+                                    ariaRole="region"
+                                    ariaLabel={intl.formatMessage(ariaMessages.stage)}
+                                    manuallySaveThumbnails={manuallySaveThumbnails}
+                                    onSetManualThumbnail={onSetManualThumbnail}
+                                    onSetManualThumbnailButtonClick={onSetManualThumbnailButtonClick}
+                                    loading={loading}
+                                    showNewFeatureCallouts={showNewFeatureCallouts}
+                                    userOwnsProject={userOwnsProject}
+                                    username={username}
+                                    onUpdateProjectThumbnail={onUpdateProjectThumbnail}
+                                    stageHeaderConfig={stageHeaderConfig}
+                                    controlsConfig={controlsConfig}
                                 />
+                                <Box
+                                    className={styles.targetWrapper}
+                                    role="region"
+                                    aria-label={intl.formatMessage(ariaMessages.targetPane)}
+                                    element="section"
+                                >
+                                    <TargetPane
+                                        readOnly={readOnly}
+                                        stageSize={stageSize}
+                                        vm={vm}
+                                        onNewSpriteClick={onNewSpriteClick}
+                                        onNewBackdropClick={onNewLibraryBackdropClick}
+                                    />
+                                </Box>
                             </Box>
-                        </Box>
+                        )}
                     </Box>
                     <DragLayer />
                 </Box>
@@ -625,6 +630,7 @@ GUIComponent.propTypes = {
     basePath: PropTypes.string,
     blocksTabVisible: PropTypes.bool,
     blocksId: PropTypes.string,
+    blocksOnly: PropTypes.bool,
     canChangeLanguage: PropTypes.bool,
     canChangeColorMode: PropTypes.bool,
     canChangeTheme: PropTypes.bool,
@@ -665,6 +671,7 @@ GUIComponent.propTypes = {
     isTotallyNormal: PropTypes.bool,
     loading: PropTypes.bool,
     logo: PropTypes.string,
+    readOnly: PropTypes.bool,
     manuallySaveThumbnails: PropTypes.bool,
     menuBarStyle: PropTypes.object,
     onSetManualThumbnail: PropTypes.func,
@@ -759,6 +766,8 @@ GUIComponent.defaultProps = {
     isTotallyNormal: false,
     loading: false,
     menuBarHidden: false,
+    readOnly: false,
+    blocksOnly: false,
     showComingSoon: false,
     showNewFeatureCallouts: false,
     stageSizeMode: STAGE_SIZE_MODES.large,

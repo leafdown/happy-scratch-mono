@@ -21,6 +21,7 @@ const TargetPane = ({
     fileInputRef,
     hoveredTarget,
     spriteLibraryVisible,
+    readOnly,
     onActivateBlocksTab,
     onChangeSpriteDirection,
     onChangeSpriteName,
@@ -58,6 +59,7 @@ const TargetPane = ({
             editingTarget={editingTarget}
             hoveredTarget={hoveredTarget}
             raised={raiseSprites}
+            readOnly={readOnly}
             selectedId={editingTarget}
             spriteFileInput={fileInputRef}
             sprites={sprites}
@@ -88,6 +90,7 @@ const TargetPane = ({
                 }
                 backdropCount={stage.costumeCount}
                 id={stage.id}
+                readOnly={readOnly}
                 selected={stage.id === editingTarget}
                 onSelect={onSelectSprite}
                 onNewBackdropClick={onNewBackdropClick}
@@ -157,6 +160,7 @@ TargetPane.propTypes = {
     onSpriteUpload: PropTypes.func,
     onSurpriseSpriteClick: PropTypes.func,
     raiseSprites: PropTypes.bool,
+    readOnly: PropTypes.bool,
     spriteLibraryVisible: PropTypes.bool,
     sprites: PropTypes.objectOf(spriteShape),
     stage: spriteShape,
