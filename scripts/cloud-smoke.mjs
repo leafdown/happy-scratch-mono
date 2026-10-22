@@ -187,6 +187,21 @@ const main = async () => {
     await wait(800);
     check('作者能读回自己的草稿变量', writer.valueOf('smoke') === '42', `value=${writer.valueOf('smoke')}`);
 
+    // 7. a client that floods the connection is throttled (50 messages per
+    // second per connection), the rest is rejected with an ack.
+    const flood = new CloudClient('flood', TOKEN);
+    await flood.connect();
+    flood.handshake(draft);
+    await wait(300);
+    flood.messages.length = 0;
+    for (let i = 0; i < 60; i++) {
+        flood.set(draft, 'burst', String(i));
+    }
+    await wait(1500);
+    const rejected = flood.ofMethod('ack').filter(message => message.reply === 'FAIL');
+    check('刷得太快的连接被限速', rejected.length > 0, `${rejected.length} 条被拒`);
+    flood.close();
+
     [writer, reader, second, anonymous].forEach(client => client.close());
 
     const failedChecks = results.filter(result => !result.ok);

@@ -70,8 +70,9 @@ location ^~ /api { proxy_pass http://api:8080/api/; }
 ```
 
 `proxy_pass` 带 URI 结尾斜杠时，nginx 会把 `/api/xxx` 改写成 `/api//xxx`，
-**双斜杠匹配不到 `@ServerEndpoint` 的路径，握手直接 404**（线上实测返回
-`{"path":"/api//websocket/scratch/cloudData"}`）。消息中心等其它 WebSocket 同样不通。
+**双斜杠匹配不到精确路径的 `@ServerEndpoint`**（线上实测云变量端点 404，错误体里是
+`{"path":"/api//websocket/scratch/cloudData"}`）；消息中心那种路径变量端点
+（`/websocket/{userId}`）不受影响，仍能连上。
 
 因此 nginx 必须为 WebSocket 单独一条 location（已加到
 `teaching-open/web/nginx/default.conf` 与 `资料/nginx.example.conf`）：
@@ -87,6 +88,14 @@ location ^~ /api/websocket/ {
 ```
 
 改完 nginx 需要重启 web 容器才生效。
+
+### 线上现状（teacher.lanqu.vip，2026-10-22）
+
+线上是单容器拓扑：nginx 与 Java API（jar）在 `teacher` 容器里，云变量 WebSocket 由独立的
+Go 服务 `ws_cloud`（镜像 `teaching-open-ws-cloud`，源码在 `teaching-open/ws-cloud/`）承载，
+nginx 用更具体的 `location ^~ /api/websocket/scratch/ { proxy_pass http://ws_cloud:8090; }`
+把云变量流量转给它。Go 服务与 Java 版协议一致（`create:<session>` 草稿会话、草稿 TTL、
+每连接 50 条/秒限速、相同的 ack 语义）。
 
 ## 变更记录（相对于 web/public 旧变体的差异）
 

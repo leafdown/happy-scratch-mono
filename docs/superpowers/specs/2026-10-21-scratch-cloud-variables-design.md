@@ -358,13 +358,20 @@ node scripts/cloud-smoke.mjs \
 
 **线上前置条件（实测发现）**：
 
-- teacher.lanqu.vip 之前所有 WebSocket 都 404：nginx 通用规则
-  `location ^~ /api { proxy_pass http://api:8080/api/; }` 会把 `/api/xxx` 改写成
-  `/api//xxx`，双斜杠匹配不到 `@ServerEndpoint` 的路径。已在
+- 线上是单容器拓扑，云变量 WebSocket 由独立的 Go 服务 `ws_cloud` 承载
+  （`teaching-open/ws-cloud/`，nginx 用 `location ^~ /api/websocket/scratch/` 转过去），
+  它与 Java 版协议一致，已包含 `create:<session>`、草稿 TTL 与每连接 50 条/秒限速。
+- 早期 nginx 的通用规则 `location ^~ /api { proxy_pass http://api:8080/api/; }` 会把
+  `/api/xxx` 改写成 `/api//xxx`，**双斜杠匹配不到精确路径的 `@ServerEndpoint`**，云变量握手
+  404（消息中心的路径变量端点不受影响）。已在
   `teaching-open/web/nginx/default.conf` 与 `资料/nginx.example.conf` 增加
-  `location ^~ /api/websocket/`（`proxy_pass` 不带 URI + Upgrade 头），需重启 web 容器。
+  `location ^~ /api/websocket/`（`proxy_pass` 不带 URI + Upgrade 头）。
 - 线上编辑器 bundle 里还没有云变量代码（`websocket/scratch` 命中 0 次），要先部署新前端。
-- 线上后端要先部署包含草稿会话、TTL 与限速的版本。
+
+**线上冒烟结果（2026-10-22，teacher.lanqu.vip）**：`scripts/cloud-smoke.mjs` 8/8 通过——
+连接、匿名读已保存作品、匿名写被拒、登录写草稿、第二个客户端收到广播、匿名打不开草稿、
+作者读回草稿、刷太快被限速（60 条里 11 条被拒）。服务端 Redis 落库为
+`scratch:cloud:draft:<用户名>:<会话>`，TTL 约 30 天。
 
 ## 9. 风险与限制
 
