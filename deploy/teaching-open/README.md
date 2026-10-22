@@ -58,6 +58,36 @@ teaching-open 里 `web/public`（旧 Vue 前端）与 `student-web/public`（新
 - 修改宿主页时：改本目录 → 跑 `scripts/deploy-to-teaching-open.sh`（会回写两份 public）
   → 在 teaching-open 分别构建/部署前端
 
+## 云变量 WebSocket 的 nginx 要求（重要）
+
+云变量端点是 `wss://<站点>/api/websocket/scratch/cloudData`（后端 context-path 是 `/api`，
+端点类是 `@ServerEndpoint("/websocket/scratch/cloudData")`）。
+
+teaching-open 的 nginx 通用规则是：
+
+```nginx
+location ^~ /api { proxy_pass http://api:8080/api/; }
+```
+
+`proxy_pass` 带 URI 结尾斜杠时，nginx 会把 `/api/xxx` 改写成 `/api//xxx`，
+**双斜杠匹配不到 `@ServerEndpoint` 的路径，握手直接 404**（线上实测返回
+`{"path":"/api//websocket/scratch/cloudData"}`）。消息中心等其它 WebSocket 同样不通。
+
+因此 nginx 必须为 WebSocket 单独一条 location（已加到
+`teaching-open/web/nginx/default.conf` 与 `资料/nginx.example.conf`）：
+
+```nginx
+location ^~ /api/websocket/ {
+    proxy_pass       http://api:8080;   # 不带 URI，原样透传 /api/websocket/...
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_read_timeout 86400s;
+}
+```
+
+改完 nginx 需要重启 web 容器才生效。
+
 ## 变更记录（相对于 web/public 旧变体的差异）
 
 - player.html：draggable 竞态双守卫（全局 error + postIOData 包装）；移除重复

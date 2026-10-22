@@ -343,6 +343,29 @@ mvn -pl jeecg-boot-module-system -am -DskipTests=false \
   -DfailIfNoTests=false test
 ```
 
+### 8.5 线上双客户端冒烟
+
+`scripts/cloud-smoke.mjs` 直接用 WebSocket 协议跑双客户端，可以指向任意环境：
+
+```bash
+node scripts/cloud-smoke.mjs \
+  --url wss://teacher.lanqu.vip/api/websocket/scratch/cloudData \
+  --token <登录 token> [--work <已保存作品 id>]
+```
+
+覆盖：匿名读已保存作品、匿名写被拒、登录写草稿、第二个客户端读到广播、匿名打不开草稿、
+作者读回自己的草稿。只写草稿桶（`create:<session>`），不会碰真实作品。
+
+**线上前置条件（实测发现）**：
+
+- teacher.lanqu.vip 之前所有 WebSocket 都 404：nginx 通用规则
+  `location ^~ /api { proxy_pass http://api:8080/api/; }` 会把 `/api/xxx` 改写成
+  `/api//xxx`，双斜杠匹配不到 `@ServerEndpoint` 的路径。已在
+  `teaching-open/web/nginx/default.conf` 与 `资料/nginx.example.conf` 增加
+  `location ^~ /api/websocket/`（`proxy_pass` 不带 URI + Upgrade 头），需重启 web 容器。
+- 线上编辑器 bundle 里还没有云变量代码（`websocket/scratch` 命中 0 次），要先部署新前端。
+- 线上后端要先部署包含草稿会话、TTL 与限速的版本。
+
 ## 9. 风险与限制
 
 - 已连接的其它客户端不会实时看到云变量重命名或删除，需要重新加载项目。
@@ -376,6 +399,8 @@ mvn -pl jeecg-boot-module-system -am -DskipTests=false \
 - `packages/lanqu-scratch-gui/src/storage/lanqu-storage.js`
 - `packages/lanqu-scratch-gui/src/storage/lanqu-cloud-provider.js`
 - `scripts/cloud-e2e.mjs`
+- `scripts/cloud-smoke.mjs`
+- `deploy/teaching-open/README.md`
 - `deploy/teaching-open/scratch3/index.html`
 - `deploy/teaching-open/scratch3/player.html`
 

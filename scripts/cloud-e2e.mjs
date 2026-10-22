@@ -16,6 +16,9 @@
  *   npx webpack --config packages/lanqu-scratch-gui/webpack.config.js   # build
  *   node scripts/cloud-e2e.mjs
  *
+ * Against a deployed site (the editor and the backend are the real ones):
+ *   node scripts/cloud-e2e.mjs --site https://teacher.lanqu.vip --token <token>
+ *
  * Environment:
  *   TEACHING_OPEN_DIR  path to the teaching-open checkout (default: sibling)
  */
@@ -34,6 +37,14 @@ const TEACHING_OPEN = process.env.TEACHING_OPEN_DIR ||
 const HOST_PAGES = path.join(ROOT, 'deploy/teaching-open');
 const BUILD = path.join(ROOT, 'packages/lanqu-scratch-gui/build');
 const DEPLOYED = path.join(TEACHING_OPEN, 'web/public');
+
+const args = process.argv.slice(2);
+const option = (name, fallback) => {
+    const index = args.indexOf(name);
+    return index === -1 ? fallback : args[index + 1];
+};
+const SITE = option('--site');
+const TOKEN = option('--token', 'token-alice');
 
 const contentTypes = {
     '.js': 'application/javascript',
@@ -138,25 +149,55 @@ wss.on('connection', ws => {
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const main = async () => {
-    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-    const port = server.address().port;
-    console.log(`mock cloud server on ${port}`);
+    let origin;
+    if (SITE) {
+        origin = SITE.replace(/\/$/, '');
+        console.log(`running against ${origin}`);
+    } else {
+        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+        const port = server.address().port;
+        console.log(`mock cloud server on ${port}`);
+        origin = `http://127.0.0.1:${port}`;
+    }
 
     const browser = await chromium.launch({channel: 'chrome', headless: true});
     const context = await browser.newContext();
-    await context.addInitScript(() => {
-        localStorage.setItem('pro__Access-Token', JSON.stringify({value: 'token-alice'}));
-        localStorage.setItem('pro__Login_Userinfo', JSON.stringify({
-            value: {username: 'alice', realname: 'Alice', avatar: ''}
-        }));
-        localStorage.setItem('pro__SYS_CONFIG', JSON.stringify({value: {qiniuDomain: ''}}));
-    });
     const page = await context.newPage();
     page.on('pageerror', error => console.log('PAGE ERROR:', error.message));
     // Loading a file asks for a confirmation, a broken file shows an alert.
     page.on('dialog', dialog => dialog.accept());
 
-    await page.goto(`http://127.0.0.1:${port}/scratch3/index.html`, {waitUntil: 'domcontentloaded'});
+    // The frames the browser really sends and receives.
+    const frames = [];
+    page.on('websocket', ws => {
+        console.log('websocket opened:', ws.url());
+        ws.on('framesent', event => {
+            String(event.payload).split('\n').filter(line => line.trim()).forEach(line => {
+                try {
+                    frames.push(JSON.parse(line));
+                } catch (e) {
+                    // not a protocol frame
+                }
+            });
+        });
+    });
+
+    await page.goto(`${origin}/scratch3/index.html`, {waitUntil: 'domcontentloaded'});
+    // The editor reads the token from the local storage of the site, so log
+    // in first and reload the editor.
+    await page.evaluate(token => {
+        localStorage.setItem('pro__Access-Token', JSON.stringify({value: token}));
+        localStorage.setItem('pro__Login_Userinfo', JSON.stringify({
+            value: {username: 'alice', realname: 'Alice', avatar: ''}
+        }));
+        localStorage.setItem('pro__SYS_CONFIG', JSON.stringify({value: {qiniuDomain: ''}}));
+    }, TOKEN);
+    await page.reload({waitUntil: 'domcontentloaded'});
+    const hasCloudApi = await page.evaluate(() => !!(window.scratch && window.scratch.getCloudId));
+    if (!hasCloudApi) {
+        throw new Error('the deployed editor has no cloud variable support yet ' +
+            '(window.scratch.getCloudId is missing), deploy the current bundle first');
+    }
     await page.waitForFunction(() => window.vm && window.scratch && window.scratch.getCloudId, null, {timeout: 60000});
     await page.waitForFunction(() => window.vm.runtime.targets.length > 0, null, {timeout: 60000});
 
@@ -170,31 +211,37 @@ const main = async () => {
     const firstSession = cloudId.split(':')[1];
     console.log('cloud id:', cloudId);
     if (!firstSession) throw new Error('the unsaved work did not get a draft session');
-    if (!received.some(m => m.method === 'handshake' && m.project_id === cloudId)) {
+    if (!frames.some(m => m.method === 'handshake' && m.project_id === cloudId)) {
         throw new Error(`no handshake for ${cloudId}`);
     }
-    const handshakeIndex = received.findIndex(m => m.method === 'handshake');
-    const createIndex = received.findIndex(m => m.method === 'create');
+    const handshakeIndex = frames.findIndex(m => m.method === 'handshake');
+    const createIndex = frames.findIndex(m => m.method === 'create');
     if (createIndex < handshakeIndex) throw new Error('the cloud variable was created before the handshake');
 
-    // The server pushes a value, the stage variable must follow.
-    sockets.forEach(ws => {
-        if (ws.projectId === cloudId) {
-            ws.send(`${JSON.stringify({
-                method: 'set',
-                project_id: cloudId,
-                name: 'score',
-                value: '42'
-            })}\n`);
-        }
-    });
-    await wait(500);
-    const stageValue = await page.evaluate(() => {
-        const variable = Object.values(window.vm.runtime.targets[0].variables).find(v => v.name === 'score');
-        return variable ? variable.value : null;
-    });
-    console.log('stage value after the broadcast:', stageValue);
-    if (stageValue !== '42') throw new Error(`the broadcast did not reach the stage: ${stageValue}`);
+    if (SITE) {
+        // Against a real server nobody pushes a value, so only the client side
+        // of the flow can be checked here.
+        console.log('SKIP  the broadcast check needs the mock server');
+    } else {
+        // The server pushes a value, the stage variable must follow.
+        sockets.forEach(ws => {
+            if (ws.projectId === cloudId) {
+                ws.send(`${JSON.stringify({
+                    method: 'set',
+                    project_id: cloudId,
+                    name: 'score',
+                    value: '42'
+                })}\n`);
+            }
+        });
+        await wait(500);
+        const stageValue = await page.evaluate(() => {
+            const variable = Object.values(window.vm.runtime.targets[0].variables).find(v => v.name === 'score');
+            return variable ? variable.value : null;
+        });
+        console.log('stage value after the broadcast:', stageValue);
+        if (stageValue !== '42') throw new Error(`the broadcast did not reach the stage: ${stageValue}`);
+    }
 
     // "File > New" starts a new unsaved work and must use a new draft bucket.
     await page.getByLabel('File menu').click();
@@ -212,15 +259,17 @@ const main = async () => {
         window.vm.runtime.targets[0].createVariable('cvar2', 'lives', '', true);
     });
     await wait(2000);
-    if (!received.some(m => m.method === 'handshake' && m.project_id === `create:${secondSession}`)) {
+    if (!frames.some(m => m.method === 'handshake' && m.project_id === `create:${secondSession}`)) {
         throw new Error('no handshake for the draft of the new work');
     }
-    const newBucket = values.get(`create:${secondSession}`);
-    if (!newBucket || !newBucket.has('lives')) {
-        throw new Error('the new work did not use the new draft bucket');
+    if (!SITE) {
+        const newBucket = values.get(`create:${secondSession}`);
+        if (!newBucket || !newBucket.has('lives')) {
+            throw new Error('the new work did not use the new draft bucket');
+        }
+        const oldBucket = values.get(`create:${firstSession}`) || new Map();
+        if (oldBucket.has('lives')) throw new Error('the new work wrote into the previous bucket');
     }
-    const oldBucket = values.get(`create:${firstSession}`) || new Map();
-    if (oldBucket.has('lives')) throw new Error('the new work wrote into the previous bucket');
 
     // A reload keeps the same draft session, so unsaved values survive.
     await page.reload({waitUntil: 'domcontentloaded'});
