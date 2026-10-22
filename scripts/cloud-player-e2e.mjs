@@ -234,38 +234,8 @@ const main = async () => {
         console.log('renderer:', renderInfo.webgl);
     }
 
-    // Anonymous read-only: the player's own project code runs (its green-flag
-    // script tries to change "☁ score"), so the page does try to write — but
-    // with no token the backend must reject every write. Drive one write
-    // through the live provider (equivalent to what the project code would
-    // send) and assert the mock answers FAIL and the stage value stays put.
-    const writeFrame = await page.evaluate(() => {
-        const provider = window.vm.runtime.ioDevices.cloud.provider;
-        if (!provider || typeof provider.updateVariable !== 'function') return null;
-        provider.updateVariable('☁ score', '999');
-        return {
-            user: provider.username,
-            token: provider.token,
-            projectId: provider.projectId
-        };
-    });
-    await wait(600);
-    const writeAck = acks[acks.length - 1];
-    console.log('anonymous write frame:', JSON.stringify(writeFrame));
-    console.log('ack for anonymous write:', JSON.stringify(writeAck));
-    if (!writeAck || writeAck.reply !== 'FAIL') {
-        throw new Error('the anonymous player write was not rejected by the server');
-    }
-    const afterWrite = await page.evaluate(() => {
-        const stage = window.vm.runtime.targets[0];
-        const cloudVar = Object.values(stage.variables).find(v => v.isCloud);
-        return cloudVar ? cloudVar.value : null;
-    });
-    if (String(afterWrite) !== '7') {
-        throw new Error(`anonymous write changed the value: ${afterWrite}`);
-    }
-
-    // A server push reaches the player live: change the value via the mock.
+    // A server push reaches the player live: change the value via the mock
+    // while the work is idle (its loop has not been started yet).
     const pushSocket = [...sockets].find(ws => ws.projectId === state.cloudId);
     if (!pushSocket) throw new Error('no live player connection to push to');
     pushSocket.send(`${JSON.stringify({
@@ -278,6 +248,32 @@ const main = async () => {
     });
     console.log('value after server push:', afterPush);
     if (String(afterPush) !== '12') throw new Error(`server push did not reach the player: ${afterPush}`);
+
+    // Anonymous read-only, exercised the real way: the demo work's green-flag
+    // script (a control_forever loop) keeps changing "☁ score". Press the
+    // play button like a user would, then confirm the loop really runs: the
+    // page sends repeated anonymous writes, the mock rejects every one, and
+    // the server-side value stays unchanged.
+    await page.evaluate(() => {
+        window.vm.runtime.start();
+        window.vm.greenFlag();
+    });
+    await wait(4000);
+    const spontaneous = frames.filter(m => m.method === 'set' && m.name === '☁ score');
+    console.log('player project-code writes sent:', spontaneous.length);
+    if (spontaneous.length < 2) {
+        throw new Error(`the work\'s script did not keep writing: ${spontaneous.length}`);
+    }
+    const rejects = acks.filter(a => a.name === '☁ score' && a.reply === 'FAIL');
+    console.log('writes rejected by the server:', rejects.length);
+    if (rejects.length < spontaneous.length) {
+        throw new Error('not every anonymous write was rejected');
+    }
+    const serverValue = bucket(state.cloudId).get('☁ score');
+    console.log('server-side value:', serverValue);
+    if (String(serverValue) !== '7') {
+        throw new Error(`anonymous writes reached the server bucket: ${serverValue}`);
+    }
 
     await browser.close();
     server.close();
