@@ -28,7 +28,7 @@ packages/
     │   ├── index.js              # createEasyRoot + buildPatchProps（scratchConfig → patch props）
     │   ├── config/               # scratchConfig 默认值 + EditorState/GUIConfig 转换
     │   ├── storage/              # 蓝鹊后端 adapter（背包 HTTP / 云变量 WebSocket / storage）
-    │   ├── api/scratch-api.js    # window.scratch.* 命令式 API（16 个）+ locale 覆盖
+    │   ├── api/scratch-api.js    # window.scratch.* 命令式 API（项目/作品/云变量/脏状态等）+ locale 覆盖
     │   └── playground/           # 三模式入口（完整编辑器 / 播放器 / 仅积木）
     └── webpack.config.js
 scripts/
@@ -50,7 +50,8 @@ scripts/
 - **积木区**：缩放比例（`blocks.scale`）、隐藏分类（`hideCatagorys`）、隐藏积木（`hideBlocks`）
 - **舞台区**：全屏/绿旗/停止按钮显隐+拦截、舞台尺寸/缩放
 - **素材库**：`assets.assetHost`；自定义素材通过 `window.scratch.push*Library` 运行时注入
-- **生命周期钩子**：`handleVmInitialized` / `handleProjectLoaded`（每次 VM 加载项目后触发，包括 `loadProject`）/ `handleDefaultProjectLoaded`（首个项目加载后触发一次）
+- **编辑器模式**：`readOnly`（只读锁定：blocks 工作区禁用、隐藏添加/删除/复制/导出控件与属性输入）、`blocksOnly`（纯积木视图：隐藏舞台与目标面板，积木区占满窗口）
+- **生命周期钩子**：`handleVmInitialized` / `handleProjectLoaded`（每次 VM 加载项目后触发，包括 `loadProject`）/ `handleDefaultProjectLoaded`（首个项目加载后触发一次）/ `handleProjectChanged`（编辑/保存时脏状态回调）/ `handleCloudStatusChange`（云连接 `connecting|connected|error|disconnected` 状态回调）
 
 > 与 easy-scratch3 的差异：`defaultProjectURL`、`assets.defaultIndex` 和 `assets.handleBefore*LibraryOpen` 依赖旧版内部实现，v15 封装未提供。默认作品请在 `handleDefaultProjectLoaded` 中调用 `window.scratch.loadProject(url, cb)`；自定义素材请用 `window.scratch.push*Library` 注入。
 
@@ -74,7 +75,9 @@ import {EasyScratch} from '@lanqu/scratch-gui';
 | `getProjectName()` / `setProjectName(name)` | 读写项目名 |
 | `setPlayerOnly(bool)` / `setFullScreen(bool)` | 切换模式 |
 | `setLocale(locale)` | 切换语言 |
-| `setEnableCouldData(bool)` / `setCloudId(id)` / `setAuthorUsername(name)` | 云变量控制 |
+| `setEnableCouldData(bool)` / `setCloudId(id)` / `getCloudId()` / `setAuthorUsername(name)` | 云变量控制 |
+| `isDirty()` / `markSaved()` | 脏状态查询与保存确认（配对 `handleProjectChanged` 驱动自动保存） |
+| `onCloudStatusChange(cb)` | 订阅云连接状态（注册即回放最近一次状态） |
 | `pushSpriteLibrary(data)` 等 4 个 | 运行时追加素材库（按素材 id 去重） |
 
 ## 与 teaching-open 集成
