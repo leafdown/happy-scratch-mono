@@ -150,7 +150,12 @@ class LanquCloudProvider {
 
         if (dataName) msg.name = dataName;
         if (dataNewName) msg.new_name = dataNewName;
-        if (typeof dataValue !== 'undefined' && dataValue !== null) msg.value = dataValue;
+        if (typeof dataValue !== 'undefined' && dataValue !== null) {
+            // The value goes over the wire as a string: the backend stores it
+            // as one (Java used getString) and a numeric JSON value is dropped
+            // by servers that only accept strings.
+            msg.value = String(dataValue);
+        }
 
         const dataToWrite = JSON.stringify(msg);
         const isManagementMessage = (

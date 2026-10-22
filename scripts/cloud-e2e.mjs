@@ -169,6 +169,7 @@ const main = async () => {
 
     // The frames the browser really sends and receives.
     const frames = [];
+    const socketErrors = [];
     page.on('websocket', ws => {
         console.log('websocket opened:', ws.url());
         ws.on('framesent', event => {
@@ -180,6 +181,8 @@ const main = async () => {
                 }
             });
         });
+        ws.on('socketerror', error => socketErrors.push(error.message));
+        ws.on('close', () => console.log('websocket closed'));
     });
 
     await page.goto(`${origin}/scratch3/index.html`, {waitUntil: 'domcontentloaded'});
@@ -201,10 +204,30 @@ const main = async () => {
     await page.waitForFunction(() => window.vm && window.scratch && window.scratch.getCloudId, null, {timeout: 60000});
     await page.waitForFunction(() => window.vm.runtime.targets.length > 0, null, {timeout: 60000});
 
-    // A cloud variable makes the editor open the cloud connection.
-    await page.evaluate(() => {
-        window.vm.runtime.targets[0].createVariable('cvar1', 'score', '', true);
-    });
+    // A cloud variable makes the editor open the cloud connection. The host
+    // page may still be loading the real project, which replaces the stage and
+    // drops the variable again, so create it until it sticks.
+    const ensureCloudVariable = async (name, id) => {
+        for (let attempt = 0; attempt < 6; attempt++) {
+            await page.evaluate(variable => {
+                const stage = window.vm.runtime.targets[0];
+                const exists = Object.values(stage.variables)
+                    .some(v => v.name === variable.name && v.isCloud);
+                if (!exists) stage.createVariable(variable.id, variable.name, '', true);
+            }, {name, id});
+            await wait(1500);
+            const stuck = await page.evaluate(variableName => (
+                window.vm.runtime.hasCloudData() &&
+                Object.values(window.vm.runtime.targets[0].variables)
+                    .some(variable => variable.name === variableName && variable.isCloud)
+            ), name);
+            if (stuck) return;
+            await wait(2000);
+        }
+        throw new Error(`the cloud variable ${name} did not stick`);
+    };
+
+    await ensureCloudVariable('score', 'cvar1');
     await wait(2000);
 
     const cloudId = await page.evaluate(() => window.scratch.getCloudId());
@@ -212,7 +235,12 @@ const main = async () => {
     console.log('cloud id:', cloudId);
     if (!firstSession) throw new Error('the unsaved work did not get a draft session');
     if (!frames.some(m => m.method === 'handshake' && m.project_id === cloudId)) {
+        console.log('captured frames:', JSON.stringify(frames));
+        console.log('socket errors:', JSON.stringify(socketErrors));
         throw new Error(`no handshake for ${cloudId}`);
+    }
+    if (process.env.CLOUD_E2E_DEBUG) {
+        console.log('captured frames:', JSON.stringify(frames));
     }
     const handshakeIndex = frames.findIndex(m => m.method === 'handshake');
     const createIndex = frames.findIndex(m => m.method === 'create');
@@ -255,9 +283,7 @@ const main = async () => {
 
     // The new work only connects once it has a cloud variable, and it must
     // use the new bucket.
-    await page.evaluate(() => {
-        window.vm.runtime.targets[0].createVariable('cvar2', 'lives', '', true);
-    });
+    await ensureCloudVariable('lives', 'cvar2');
     await wait(2000);
     if (!frames.some(m => m.method === 'handshake' && m.project_id === `create:${secondSession}`)) {
         throw new Error('no handshake for the draft of the new work');
