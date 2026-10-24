@@ -72,7 +72,7 @@ const buildConfig = baseConfig.clone()
         output: {
             path: path.resolve(__dirname, 'build'),
             // Absolute public path matching the teaching-open deployment location
-            // (web/public/scratch3/ served at /scratch3/). Worker URLs resolve
+            // (student-web/public/scratch3/ served at /scratch3/). Worker URLs resolve
             // against this so fetch-worker loads from /scratch3/chunks/ not /chunks/.
             publicPath: process.env.LANQU_PUBLIC_PATH || '/scratch3/'
         }

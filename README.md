@@ -82,7 +82,7 @@ import {EasyScratch} from '@lanqu/scratch-gui';
 
 ## 与 teaching-open 集成
 
-`@lanqu/scratch-gui` 的构建产物部署到 teaching-open 的两个前端 —— `web/public/scratch3/`（旧 Vue 端）与 `student-web/public/scratch3/`（生产 React 端，运行时产物被 gitignore 不入库），作为蓝鹊教学平台的 Scratch 编辑器：
+`@lanqu/scratch-gui` 的构建产物部署到 teaching-open 的生产前端 `student-web/public/scratch3/`（运行时产物被 gitignore 不入库），作为蓝鹊教学平台的 Scratch 编辑器：
 
 - `index.html` / `player.html` 含蓝鹊 `scratchConfig`（后端 API、提交作业逻辑）
 - `chunks/gui.js` 是封装包产物（引用 scratch-gui v15 standalone dist）
