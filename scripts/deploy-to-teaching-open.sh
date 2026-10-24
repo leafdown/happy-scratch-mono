@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 #
 # deploy-to-teaching-open.sh — build @lanqu/scratch-gui and deploy the runtime
-# artifacts to teaching-open/web/public/scratch3/.
+# artifacts to teaching-open/student-web/public/scratch3/.
 #
 # Build outputs (JS bundles, chunks, workers, blocks-media, paper sandbox
-# assets) are deployed to both frontends — web/public (legacy Vue) and
-# student-web/public (production) — whenever their scratch3/ directories exist.
-# The runtime chunk set is additionally mirrored into each frontend's
+# assets) are deployed to the production React frontend
+# (student-web/public), which serves teacher.lanqu.vip. The legacy Vue
+# frontend (web/public) was retired in 2026-10.
+# The runtime chunk set is additionally mirrored into the frontend's
 # public/chunks/ (site root) because scratch-gui's nested webpack runtime
 # requests lazy chunks from /chunks/..., not /scratch3/chunks/... — see the
 # "root-level chunk mirror" section below.
@@ -30,13 +31,11 @@ DO_BUILD="yes"
 # teaching-open checkout: a sibling of happy-scratch-mono by default. Override
 # with TEACHING_OPEN_ROOT when the repository lives elsewhere.
 TEACHING_OPEN_ROOT="${TEACHING_OPEN_ROOT:-$ROOT/../teaching-open}"
-TO_SCRATCH3="$TEACHING_OPEN_ROOT/web/public/scratch3"
-TO_PUBLIC="$TEACHING_OPEN_ROOT/web/public"
-# student-web is the production frontend; it has its own copy of scratch3/
-TO_STUDENT_PUBLIC="$TEACHING_OPEN_ROOT/student-web/public"
+# student-web is the production frontend (serves teacher.lanqu.vip).
+TO_PUBLIC="$TEACHING_OPEN_ROOT/student-web/public"
 
-if [[ ! -d "$TO_SCRATCH3" ]]; then
-    echo "Target not found: $TO_SCRATCH3"
+if [[ ! -d "$TO_PUBLIC/scratch3" ]]; then
+    echo "Target not found: $TO_PUBLIC/scratch3"
     echo "Set TEACHING_OPEN_ROOT to the teaching-open checkout directory."
     exit 1
 fi
@@ -73,9 +72,7 @@ SRC="packages/lanqu-scratch-gui/build"
 
 echo ">>> [3/3] Deploying to teaching-open..."
 
-# Deploy the Lanqu runtime build outputs into one frontend's scratch3/ dir.
-# web/public (legacy Vue) and student-web/public (production React) keep
-# identical build outputs; both are refreshed by this script.
+# Deploy the Lanqu runtime build outputs into student-web/public/scratch3/.
 deploy_build_outputs() {
     local PUB="$1"
 
@@ -113,21 +110,16 @@ deploy_build_outputs() {
         -exec cp {} "$PUB/scratch3/static/assets/" \;
 }
 
-echo "    JS bundles + chunks → web/public (legacy)..."
+echo "    JS bundles + chunks → student-web/public (production)..."
 deploy_build_outputs "$TO_PUBLIC"
-
-if [[ -d "$TO_STUDENT_PUBLIC/scratch3" ]]; then
-    echo "    JS bundles + chunks → student-web/public (production)..."
-    deploy_build_outputs "$TO_STUDENT_PUBLIC"
-fi
 
 # --- Root-level chunk mirror ------------------------------------------------
 # scratch-gui's dist-standalone embeds a nested webpack runtime whose publicPath
 # is hardcoded to '/' (webpack's 'auto' falls back to '/' inside an embedded UMD
 # bundle). Lazy chunks — paper-url / paper-source / 540 (paint editor sandbox),
 # tutorial step images, fetch-workers, mediapipe — are therefore requested from
-# /chunks/... at the site root instead of /scratch3/chunks/.... Both frontends
-# copy public/ verbatim to their output root (Vite/Vue publicDir), so mirroring
+# /chunks/... at the site root instead of /scratch3/chunks/.... student-web
+# copies public/ verbatim to its output root (Vite publicDir), so mirroring
 # the chunk set into public/chunks/ makes those root-relative requests hit real
 # files instead of the SPA fallback's index.html (which surfaces as
 # ChunkLoadError / "Unexpected token '<'" in the editor).
@@ -142,16 +134,15 @@ deploy_root_chunks() {
 
 echo "    root /chunks/ mirror..."
 deploy_root_chunks "$TO_PUBLIC"
-deploy_root_chunks "$TO_STUDENT_PUBLIC"
 
 # --- Lanqu-owned host pages (canonical copies live in deploy/teaching-open/) ---
 # index.html / player.html carry scratchConfig + backend integration and are NOT
 # build outputs; js/common.js (v29) is their hard dependency (getSysConfig fix).
-# Sync to both frontends: student-web/public (production) and web/public (legacy).
+# Synced to student-web/public (production).
 HOST_SRC="$ROOT/deploy/teaching-open"
 if [[ -d "$HOST_SRC" ]]; then
     echo "    host pages (canonical)..."
-    for T_PUB in "$TO_STUDENT_PUBLIC" "$TO_PUBLIC"; do
+    for T_PUB in "$TO_PUBLIC"; do
         if [[ -d "$T_PUB/scratch3" ]]; then
             cp "$HOST_SRC/scratch3/index.html"  "$T_PUB/scratch3/index.html"
             cp "$HOST_SRC/scratch3/player.html" "$T_PUB/scratch3/player.html"
@@ -165,7 +156,7 @@ fi
 
 echo ""
 echo "=== Deploy complete ==="
-echo "Build outputs updated in web/public/scratch3 (legacy) and student-web/public/scratch3 (production)."
+echo "Build outputs updated in student-web/public/scratch3 (production)."
 echo "Host pages synced from deploy/teaching-open/ (see deploy/teaching-open/README.md)."
 echo ""
-echo "Next: restart teaching-open dev server (cd web && yarn serve) to verify."
+echo "Next: build + deploy student-web (cd student-web && npm run build && bash scripts/deploy.sh)."

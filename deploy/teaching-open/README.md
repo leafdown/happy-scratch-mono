@@ -9,9 +9,9 @@
 
 | 文件 | 部署目标（teaching-open） | 说明 |
 | --- | --- | --- |
-| `scratch3/index.html` | `student-web/public/scratch3/index.html`、`web/public/scratch3/index.html` | 编辑器宿主页（完整编辑器）。scratchConfig：提交/保存/返回按钮、云变量、背包、自定义素材库注入、匿名登录弹窗 |
-| `scratch3/player.html` | `student-web/public/scratch3/player.html`、`web/public/scratch3/player.html` | 作品播放器宿主页。scratchConfig：云变量、防 draggable 竞态、素材加速 |
-| `js/common.js` | `student-web/public/js/common.js`、`web/public/js/common.js` | 宿主页依赖（getSysConfig/getUserToken/upload2Qiniu/update2Local 等）。v29 |
+| `scratch3/index.html` | `student-web/public/scratch3/index.html` | 编辑器宿主页（完整编辑器）。scratchConfig：提交/保存/返回按钮、云变量、背包、自定义素材库注入、匿名登录弹窗 |
+| `scratch3/player.html` | `student-web/public/scratch3/player.html` | 作品播放器宿主页。scratchConfig：云变量、防 draggable 竞态、素材加速 |
+| `js/common.js` | `student-web/public/js/common.js` | 宿主页依赖（getSysConfig/getUserToken/upload2Qiniu/update2Local 等）。v29 |
 
 ## 关键契约
 
@@ -49,14 +49,13 @@ dynamicAssets。`pushAssets` 会按素材 id 去重，重复调用不会产生�
 
 ## 部署映射说明
 
-teaching-open 里 `web/public`（旧 Vue 前端）与 `student-web/public`（新 React 前端，
-生产）各有一份 `scratch3/`。两份宿主页历史上发生过分叉；本目录的规范副本以 student-web
-变体为基准（严格超集，向下兼容）：
+teaching-open 里 `student-web/public`（新 React 前端，生产）持有 `scratch3/`；
+旧 Vue 前端（`web/public`）已于 2026-10 退役并从仓库移除。
 
 - `player.js`/`gui.js` 等**构建产物**不属于本目录 —— 由 `scripts/deploy-to-teaching-open.sh`
-  从 `packages/lanqu-scratch-gui/build` 部署（两份 public 的构建产物保持一致）
-- 修改宿主页时：改本目录 → 跑 `scripts/deploy-to-teaching-open.sh`（会回写两份 public）
-  → 在 teaching-open 分别构建/部署前端
+  从 `packages/lanqu-scratch-gui/build` 部署到 `student-web/public/scratch3/`
+- 修改宿主页时：改本目录 → 跑 `scripts/deploy-to-teaching-open.sh`（回写 student-web/public）
+  → 在 teaching-open 构建/部署 student-web
 
 ## 云变量 WebSocket 的 nginx 要求（重要）
 
